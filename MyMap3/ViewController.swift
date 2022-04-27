@@ -940,8 +940,6 @@ directions2.calculate{
         }
         self.myMapView.isPitchEnabled = true
         
-
-        
         print("present location : (newLocation.coordinate.latitude), (newLocation.coordinate.longitude)")
         
         let url4:NSURL! = NSURL(string: "http://www.hangge.com")
@@ -1015,11 +1013,7 @@ directions2.calculate{
             if let name = peripheral.name{
                 print(name)
             }
-            
-        
-            
-            
-        }
+         }
             // MARK: - Tool Methods - Alert
             func showAlert(title: String, message: String, buttonTitle: String) {
                 let alert = UIAlertController(title: title,
@@ -1325,11 +1319,7 @@ directions2.calculate{
         periperalManager.updateValue(data, for: characteristic, onSubscribedCentrals: nil)
     }
     
-    
-    
-    
-    
-    func getNonExistingUser() {
+   func getNonExistingUser() {
         guard let url = URL(string: "https://reqres.in/api/users/100") else { return }
         
       
@@ -1398,17 +1388,7 @@ directions2.calculate{
         var postData:NSData;
         
         let url = NSURL(string: srtURL)!
-        
-        
-        
-    
-        
-        
-        
-        
-        
-        
-    }
+  }
     
     
     
@@ -1429,10 +1409,6 @@ directions2.calculate{
         
         completionHandler()
     }
-    
-   
-   
-
     func createDirectionRequest(from coordinate:CLLocationCoordinate2D)->MKDirections.Request{
         let startingLocation = MKPlacemark(coordinate: coordinate)
         let destinationLocation = MKPlacemark(coordinate: coordinate)
@@ -1505,8 +1481,6 @@ directions2.calculate{
         _tableView.deselectRow(at: indexPath, animated: false)
        
     }
-    
-    
     func getJSONData(completed: @escaping () -> ()) {
         if let filepath = Bundle.main.path(forResource: "weather", ofType: "json") {
             if let data = try? String(contentsOf: URL(fileURLWithPath: filepath)) {
@@ -1535,14 +1509,7 @@ directions2.calculate{
             alertMessage.addAction(UIAlertAction(title:"ok",style:.default,handler:nil))
             self.present(alertMessage, animated: true, completion: nil)
         }
-        
-     
-        
-     
-        
-        
-        
-    }
+ }
   func prepareForSeque(seque:UIStoryboardSegue,sender:AnyObject?){
         if seque.identifier == "showSteps"{
             let destinationController = seque.destination as! UINavigationController
@@ -1723,9 +1690,7 @@ directions2.calculate{
             }
             
         }
-                             
-       
-    }
+ }
     
     func checkLocationAuthorization(){
         switch CLLocationManager.authorizationStatus(){
@@ -1866,8 +1831,6 @@ directions2.calculate{
             
             self.myMapView.showAnnotations([sourceAnotation, destinationAnotation], animated: true)
             
-            
-            
             let directionRequest = MKDirections.Request()
             directionRequest.source = sourceMapItem
             directionRequest.destination = destinationItem
@@ -1932,10 +1895,6 @@ directions2.calculate{
                print("user longitude = \(userLocation.coordinate.longitude)")
        
     }
-    
-    
-    
-    
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error)
         {
@@ -2076,8 +2035,7 @@ directions2.calculate{
 
     }
         
-      
-        func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
+    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
                 pr.strokeColor = UIColor.red
@@ -2127,18 +2085,9 @@ directions2.calculate{
         }
         typealias JSONDictionary = [String : Any]
         
-        
-        
-   
-    
-
-
-    return nil
+        return nil
 
     }
-    
-  
-
 }
 
 //QR code破解碼後開啟相對應ＡＰＰ
