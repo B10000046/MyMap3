@@ -360,10 +360,6 @@ import LocalAuthentication
         } else {
           NSLog("Can't use comgooglemaps-x-callback:// on this device.")
         }
-        
-        
-        
-        
         captureSession.sessionPreset = AVCaptureSession.Preset.photo
         struct CreateUserBody: Encodable {
             let name: String
@@ -573,13 +569,6 @@ import LocalAuthentication
             task.resume()
             
         }
-        
-      
-        
-        
-        
-        
-        
         let string = "Welcome to cloud logistic System"
         let utterance = AVSpeechUtterance(string: string)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
@@ -745,7 +734,6 @@ import LocalAuthentication
         if let location = sourcePlacemark2.location {
           sourceAnnotation2.coordinate = location.coordinate
       }
-      
       
       let destinationAnnotation2 = MKPointAnnotation()
       destinationAnnotation2.title = "Empire State Building"
@@ -1089,15 +1077,7 @@ directions2.calculate{
         }
         
         let path = Bundle.main.path(forResource: "index", ofType: ".html")
-        
- 
-    
-        
     }
-    
-    
-    
-       
     @IBAction func signUpAction(_ sender: Any) {
         let signUpAlert = UIAlertController(title: "註冊", message: "註冊", preferredStyle: .alert)
                 let saveAction = UIAlertAction(title: "儲存", style: .default) { (action) in
@@ -1354,15 +1334,7 @@ directions2.calculate{
         
       
     }
-    
-    
-    
-   
-    
-    
-   
-  
-    func peripheralManager(_ peripheral: CBPeripheralManager, central:CBCentral,didSubscribeTo characteristic:CBCharacteristic) {
+   func peripheralManager(_ peripheral: CBPeripheralManager, central:CBCentral,didSubscribeTo characteristic:CBCharacteristic) {
         if peripheral.isAdvertising{
             peripheral.stopAdvertising()
             print("停止廣播")
@@ -1714,11 +1686,7 @@ directions2.calculate{
                                    latitudinalMeters: 2000, longitudinalMeters: 2000)
          
         }
-    }
-
-    
-    
-    
+   } 
     func mapView(_ mapView: MKMapView, rendererFor
                     overlay: MKOverlay) -> MKOverlayRenderer {
         let renderer = MKPolylineRenderer(overlay: overlay)
@@ -1784,11 +1752,7 @@ directions2.calculate{
         
     }
     
-
-    
-    
-    
-// MARK: MKMapViewDelegate Methods
+   // MARK: MKMapViewDelegate Methods
     func checkLocationService(){
         if CLLocationManager.locationServicesEnabled(){
             setUpLocationManager()
@@ -1806,12 +1770,7 @@ directions2.calculate{
         }
         return renderer
     }
-    
-    
-    
-    
-    
-    func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer {
+   func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer {
             let renderer = MKPolylineRenderer(overlay: overlay)
         renderer.strokeColor = UIColor.orange
             renderer.lineWidth = 4.0
@@ -2018,11 +1977,7 @@ directions2.calculate{
         segmentedControl.isHidden = false
         let directionRequest = MKDirections.Request()
         
-       
-        
-     
-        
-    }
+}
     // 代理方法一:当获取到用户的位置的时候会来到该方法
     /// - Parameters:
     ///   - manager: 位置管理者
@@ -2070,11 +2025,7 @@ directions2.calculate{
 
 
 // MARK: CLLocationManagerDelegate Methods
-
-      
-    
-   
-        func locationManager(manager: CLLocationManager!, didUpdateToLocation newLocation: CLLocation!, fromLocation oldLocation: CLLocation!){
+   func locationManager(manager: CLLocationManager!, didUpdateToLocation newLocation: CLLocation!, fromLocation oldLocation: CLLocation!){
             //drawing path or route covered
             if let oldLocationNew = oldLocation as CLLocation?{
                  let oldCoordinates = oldLocationNew.coordinate
