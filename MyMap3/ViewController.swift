@@ -12,8 +12,12 @@ import Foundation
 import CoreData
 import iAd
 import LocalAuthentication
+import AEXML
+
 @objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate,WKScriptMessageHandler, MKMapViewDelegate,CBPeripheralManagerDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate,BLEManagerDelegate, UITableViewDelegate{
     @IBOutlet weak var temperatureLabel: UILabel!
+    
+    var locationManager: CLLocationManager!
     func bleManagerDidConnect(_ manager: BLEManagable) {
         self.temperatureLabel.textColor = UIColor.black
     }
@@ -38,9 +42,9 @@ import LocalAuthentication
     
     
     let apiKey2 = "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5"
-
-        
-    var isAdDisplay = false
+    
+    //創建ＸＭＬ文檔數據
+    let soapRequest = AEXMLDocument()
     var restaurantNames = ["teaha","CaffeLatte","Espresso","Americano"]
  
     
@@ -160,6 +164,7 @@ import LocalAuthentication
     private var currentRoute: MKRoute?
     
     private var previousLocation:[MKPointAnnotation] = []
+    private var newLocation:[MKPointAnnotation] = []
     var seconds=0.0
     var distance=0.0
     var _locationManager=CLLocationManager()
@@ -176,7 +181,6 @@ import LocalAuthentication
     
     var bleManager: BLEManagable?
     
-    var locationManager = CLLocationManager()
 
     let lm = CLLocationManager()
     let sessionConfiguration = URLSessionConfiguration.default
@@ -217,7 +221,6 @@ import LocalAuthentication
         myMapView.setRegion(region, animated: true)
     }
  
- 
     var location : CLLocationManager!; //座標管理元件
     var backFacingCamera:AVCaptureDevice?
     var frontFacingCamera:AVCaptureDevice?
@@ -226,13 +229,28 @@ import LocalAuthentication
     @IBOutlet weak var password_input: UITextField!
     @IBOutlet weak var login_button: UIButton!
     @IBOutlet weak var weatherLabel: UILabel!
-
+    let manager = CLLocationManager()
+    var completion:((CLLocation)->Void)?
+    public func getUserLocation(completion:@escaping ((CLLocation)-> Void)){
+        self.completion = completion
+        manager.requestWhenInUseAuthorization()
+        manager.delegate = self
+        manager.startUpdatingLocation()
+        
+    }
+ 
     override func viewDidLoad() {
         super.viewDidLoad()
-     
+        
+        var thread1:Thread?
+        thread1=Thread(target: self, selector:#selector(ViewController.thread1ToDo), object: nil)
+        thread1?.start()
+        
+        
+        
         let mm = CMMotionManager()
         let device = UIDevice.current
-        var isRobotOn = false
+     
             // object instance of synthesizer
             let synthesizer = AVSpeechSynthesizer()
         synthesizer.delegate = self
@@ -305,7 +323,7 @@ import LocalAuthentication
                    
                    // insert
                    let _ = mydb.insert("students",
-                                       rowInfo: ["name":"'RAM'","height":"500"])
+                                       rowInfo: ["name":"'DRAM'","height":"550"])
                   // select
                    let statement = mydb.fetch("students", cond: "1 == 1", order: nil)
                    while sqlite3_step(statement) == SQLITE_ROW{
@@ -360,6 +378,10 @@ import LocalAuthentication
         } else {
           NSLog("Can't use comgooglemaps-x-callback:// on this device.")
         }
+        
+        printExampleFromReadme()
+        let soapRequest = AEXMLDocument()
+        
         captureSession.sessionPreset = AVCaptureSession.Preset.photo
         struct CreateUserBody: Encodable {
             let name: String
@@ -460,6 +482,7 @@ import LocalAuthentication
             }
         }.resume()
         
+        
         func queryOneData() {
             let queryString = "SELECT * FROM Contacts WHERE Id == 1;"
             var queryStatement: OpaquePointer?
@@ -549,8 +572,6 @@ import LocalAuthentication
                 return nil
             }
         }
-        
-        
         let urlString2 = URL(string: "https://reqres.in/api/users/3")  // Making the URL
         if let url = urlString2 {
            let task = URLSession.shared.dataTask(with: url) {
@@ -569,6 +590,34 @@ import LocalAuthentication
             task.resume()
             
         }
+      
+        let root = soapRequest.addChild(name: "data")
+         
+        let catalog1 = root.addChild(name: "catalog")
+        catalog1.addChild(name: "genre", value: "计算机")
+         
+        let books1 = catalog1.addChild(name: "books")
+        let book1 = books1.addChild(name: "book", attributes: ["id": "101"])
+        book1.addChild(name: "title", value: "神经网络设计")
+        book1.addChild(name: "price", value: "19.9")
+        book1.addChild(name: "publishDate", value: "2018-09-11")
+        let book2 = books1.addChild(name: "book", attributes: ["id": "102"])
+        book2.addChild(name: "title", value: "代码大全")
+        book2.addChild(name: "price", value: "108.0")
+        book2.addChild(name: "publishDate", value: "2006-06-20")
+         
+        let catalog2 = root.addChild(name: "catalog")
+        catalog2.addChild(name: "genre", value: "科幻小说")
+         
+        let books2 = catalog1.addChild(name: "books")
+        let book3 = books2.addChild(name: "book", attributes: ["id": "201"])
+        book3.addChild(name: "title", value: "三体")
+        book3.addChild(name: "price", value: "70.0")
+        book3.addChild(name: "publishDate", value: "2017-08-10")
+        
+        print(soapRequest.xml)
+        
+        
         let string = "Welcome to cloud logistic System"
         let utterance = AVSpeechUtterance(string: string)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
@@ -593,7 +642,6 @@ import LocalAuthentication
         
 
         requestLocationAccess()
-
         myLocationManager = CLLocationManager()
         myLocationManager.delegate = self
         myLocationManager.distanceFilter = kCLLocationAccuracyNearestTenMeters
@@ -622,8 +670,6 @@ import LocalAuthentication
      
         myMapView.showsUserLocation = true
         myMapView.delegate = self
-     
-       
         myMapView.mapType = .standard
         myMapView.isPitchEnabled = true
         
@@ -711,9 +757,7 @@ import LocalAuthentication
                         }
             let route = response.routes[0]
             self.myMapView.addOverlay((route.polyline), level: MKOverlayLevel.aboveRoads)
-
-            
-        }
+    }
         
         ///
         let sourceLocation2 = CLLocationCoordinate2D(latitude: 25.033671, longitude: 121.564427)
@@ -734,6 +778,7 @@ import LocalAuthentication
         if let location = sourcePlacemark2.location {
           sourceAnnotation2.coordinate = location.coordinate
       }
+      
       
       let destinationAnnotation2 = MKPointAnnotation()
       destinationAnnotation2.title = "Empire State Building"
@@ -793,10 +838,7 @@ directions2.calculate{
                 }
         }
 
-       
-        
-        
-        let center2:CLLocation = CLLocation(latitude: 25.05, longitude: 121.515)
+ let center2:CLLocation = CLLocation(latitude: 25.05, longitude: 121.515)
         let currentRegion = MKCoordinateRegion(center: center2.coordinate, span: currentLocationSpan)
         myMapView.setRegion(currentRegion, animated: true)
         
@@ -940,6 +982,8 @@ directions2.calculate{
         }
         self.myMapView.isPitchEnabled = true
         
+        
+
         print("present location : (newLocation.coordinate.latitude), (newLocation.coordinate.longitude)")
         
         let url4:NSURL! = NSURL(string: "http://www.hangge.com")
@@ -982,8 +1026,6 @@ directions2.calculate{
         
         let routes = [miA,miC]
       
-        
-        
         let options = [MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeDriving]
         getDirection()
          
@@ -1013,7 +1055,7 @@ directions2.calculate{
             if let name = peripheral.name{
                 print(name)
             }
-         }
+}
             // MARK: - Tool Methods - Alert
             func showAlert(title: String, message: String, buttonTitle: String) {
                 let alert = UIAlertController(title: title,
@@ -1050,6 +1092,7 @@ directions2.calculate{
         
         MKMapItem.openMaps(with:routes,launchOptions: options)
         
+        
        
         peripheralManager = CBPeripheralManager(delegate:self,queue:queue)
         let urlString4 = URL(string: "api.openweathermap.org/data/2.5/forecast?id=524901&APPID=1111111111")  // Making the URL
@@ -1071,7 +1114,8 @@ directions2.calculate{
         }
         
         let path = Bundle.main.path(forResource: "index", ofType: ".html")
-    }
+}
+    
     @IBAction func signUpAction(_ sender: Any) {
         let signUpAlert = UIAlertController(title: "註冊", message: "註冊", preferredStyle: .alert)
                 let saveAction = UIAlertAction(title: "儲存", style: .default) { (action) in
@@ -1095,6 +1139,13 @@ directions2.calculate{
                 
                 present(signUpAlert, animated: true, completion: nil)
     }
+    func render(_ location: CLLocation){
+        let coordinate = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+        let span = MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+        
+        let region = MKCoordinateRegion(center: coordinate, span: span)
+        myMapView.setRegion(region, animated: true)
+    }
     
     override func becomeFirstResponder() -> Bool {
         return true
@@ -1111,6 +1162,13 @@ directions2.calculate{
             myUtterance = AVSpeechUtterance(string: "Hello World")
                     myUtterance.rate = 0.3
             synth.speak(myUtterance)
+        }
+    }
+    @objc func thread1ToDo(sender:AnyObject?){
+        for i in 1...100{
+            print("I'm thread1-- \(i)")
+            //加入當前標記
+            
         }
     }
    
@@ -1209,11 +1267,7 @@ directions2.calculate{
        // 啟動 task
        dataTask.resume()
     }
-    /*
-         nameSpace:命名空间
-         urlStr:请求接口
-         method:方法体
-         */
+
         func webServiceConnect( nameSpace:String, urlStr:String, method:String){
             
             //soap的配置
@@ -1257,6 +1311,92 @@ directions2.calculate{
             //提交请求
             task.resume()
         }
+    private func printExampleFromReadme() {
+        guard
+            let xmlPath = Bundle.main.path(forResource: "example", ofType: "xml"),
+            let data = try? Data(contentsOf: URL(fileURLWithPath: xmlPath))
+        else {
+            print("resource not found!")
+            return
+        }
+
+        // example of using NSXMLParserOptions
+        var options = AEXMLOptions()
+        options.parserSettings.shouldProcessNamespaces = false
+        options.parserSettings.shouldReportNamespacePrefixes = false
+        options.parserSettings.shouldResolveExternalEntities = false
+
+        do {
+            let xmlDoc = try AEXMLDocument(xml: data, options: options)
+
+            // prints the same XML structure as original
+            print(xmlDoc.xml)
+
+            // prints cats, dogs
+            for child in xmlDoc.root.children {
+                print(child.name)
+            }
+
+            // prints Optional("Tinna") (first element)
+            print(String(describing: xmlDoc.root["cats"]["cat"].value))
+
+            // prints Tinna (first element)
+            print(xmlDoc.root["cats"]["cat"].string)
+
+            // prints Optional("Kika") (last element)
+            print(String(describing: xmlDoc.root["dogs"]["dog"].last?.value))
+
+            // prints Betty (3rd element)
+            print(xmlDoc.root["dogs"].children[2].string)
+
+            // prints Tinna, Rose, Caesar
+            if let cats = xmlDoc.root["cats"]["cat"].all {
+                for cat in cats {
+                    if let name = cat.value {
+                        print(name)
+                    }
+                }
+            }
+
+            // prints Villy, Spot
+            for dog in xmlDoc.root["dogs"]["dog"].all! {
+                if let color = dog.attributes["color"] {
+                    if color == "white" {
+                        print(dog.string)
+                    }
+                }
+            }
+
+            // prints Tinna
+            if let cats = xmlDoc.root["cats"]["cat"].all(withValue: "Tinna") {
+                for cat in cats {
+                    print(cat.string)
+                }
+            }
+
+            // prints Caesar
+            if let cats = xmlDoc.root["cats"]["cat"].all(withAttributes: ["breed" : "Domestic", "color" : "yellow"]) {
+                for cat in cats {
+                    print(cat.string)
+                }
+            }
+
+            // prints 4
+            print(xmlDoc.root["cats"]["cat"].count)
+
+            // prints Siberian
+            print(xmlDoc.root["cats"]["cat"].attributes["breed"]!)
+
+            // prints <cat breed="Siberian" color="lightgray">Tinna</cat>
+            print(xmlDoc.root["cats"]["cat"].xmlCompact)
+
+            // prints Optional(AEXML.AEXMLError.elementNotFound)
+            print(String(describing: xmlDoc["NotExistingElement"].error))
+        } catch {
+            print("\(error)")
+        }
+    }
+    
     @IBAction func login(sender: UIButton) {
             if account.text == myAccount && password.text == myPassword {
                 self.info.text = "成功"
@@ -1319,12 +1459,17 @@ directions2.calculate{
         periperalManager.updateValue(data, for: characteristic, onSubscribedCentrals: nil)
     }
     
-   func getNonExistingUser() {
+    
+    
+    
+    
+    func getNonExistingUser() {
         guard let url = URL(string: "https://reqres.in/api/users/100") else { return }
         
       
     }
-   func peripheralManager(_ peripheral: CBPeripheralManager, central:CBCentral,didSubscribeTo characteristic:CBCharacteristic) {
+    
+    func peripheralManager(_ peripheral: CBPeripheralManager, central:CBCentral,didSubscribeTo characteristic:CBCharacteristic) {
         if peripheral.isAdvertising{
             peripheral.stopAdvertising()
             print("停止廣播")
@@ -1388,7 +1533,17 @@ directions2.calculate{
         var postData:NSData;
         
         let url = NSURL(string: srtURL)!
-  }
+        
+        
+        
+    
+        
+        
+        
+        
+        
+        
+    }
     
     
     
@@ -1409,6 +1564,10 @@ directions2.calculate{
         
         completionHandler()
     }
+    
+   
+   
+
     func createDirectionRequest(from coordinate:CLLocationCoordinate2D)->MKDirections.Request{
         let startingLocation = MKPlacemark(coordinate: coordinate)
         let destinationLocation = MKPlacemark(coordinate: coordinate)
@@ -1481,6 +1640,8 @@ directions2.calculate{
         _tableView.deselectRow(at: indexPath, animated: false)
        
     }
+    
+    
     func getJSONData(completed: @escaping () -> ()) {
         if let filepath = Bundle.main.path(forResource: "weather", ofType: "json") {
             if let data = try? String(contentsOf: URL(fileURLWithPath: filepath)) {
@@ -1509,7 +1670,14 @@ directions2.calculate{
             alertMessage.addAction(UIAlertAction(title:"ok",style:.default,handler:nil))
             self.present(alertMessage, animated: true, completion: nil)
         }
- }
+        
+     
+        
+     
+        
+        
+        
+    }
   func prepareForSeque(seque:UIStoryboardSegue,sender:AnyObject?){
         if seque.identifier == "showSteps"{
             let destinationController = seque.destination as! UINavigationController
@@ -1653,7 +1821,11 @@ directions2.calculate{
                                    latitudinalMeters: 2000, longitudinalMeters: 2000)
          
         }
-   } 
+    }
+
+    
+    
+    
     func mapView(_ mapView: MKMapView, rendererFor
                     overlay: MKOverlay) -> MKOverlayRenderer {
         let renderer = MKPolylineRenderer(overlay: overlay)
@@ -1690,7 +1862,9 @@ directions2.calculate{
             }
             
         }
- }
+                             
+       
+    }
     
     func checkLocationAuthorization(){
         switch CLLocationManager.authorizationStatus(){
@@ -1716,8 +1890,7 @@ directions2.calculate{
         return CLLocation(latitude:latitude,longitude:longitude)
         
     }
-    
-   // MARK: MKMapViewDelegate Methods
+    // MARK: MKMapViewDelegate Methods
     func checkLocationService(){
         if CLLocationManager.locationServicesEnabled(){
             setUpLocationManager()
@@ -1735,7 +1908,7 @@ directions2.calculate{
         }
         return renderer
     }
-   func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer {
+    func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer {
             let renderer = MKPolylineRenderer(overlay: overlay)
         renderer.strokeColor = UIColor.orange
             renderer.lineWidth = 4.0
@@ -1744,9 +1917,7 @@ directions2.calculate{
         }
     
     //自定義大頭針樣式
-   
-   
-    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+   func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         let identifier = "MyPin"
         if annotation.isKind(of: MKUserLocation.self) {
             return nil
@@ -1759,8 +1930,6 @@ directions2.calculate{
         }
         if(annotation.title)! == "行天宮"{
             annotationView!.pinTintColor = UIColor.blue
-            
-            
         }
         if(annotation.title)! == "艋舺公園"{
             annotationView!.pinTintColor = UIColor.blue
@@ -1784,12 +1953,7 @@ directions2.calculate{
         
         return annotationView
     }
-    @IBAction func onClick(_sender:UIButton,forEvent event:UIButton){
-        if _sender === UIButton(){
-           print("on button touch")
-        }
-    }
-    
+
     private func mapView(mapView: MKMapView!, viewForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
            if (overlay is MKPolyline) {
                let pr = MKPolylineRenderer(overlay: overlay)
@@ -1797,6 +1961,7 @@ directions2.calculate{
                pr.lineWidth = 4
                return pr
            }
+          
            return nil
        }
 
@@ -1830,6 +1995,8 @@ directions2.calculate{
             }
             
             self.myMapView.showAnnotations([sourceAnotation, destinationAnotation], animated: true)
+            
+            
             
             let directionRequest = MKDirections.Request()
             directionRequest.source = sourceMapItem
@@ -1889,13 +2056,19 @@ directions2.calculate{
             locationManager.startUpdatingLocation()
         }
     }
+    //Current location 8:13
     func locationManager(_ manager:CLLocationManager,didUpdateLocations locations:[CLLocation]){
         let userLocation:CLLocation = locations[0] as CLLocation
         print("user latitude = \(userLocation.coordinate.latitude)")
-               print("user longitude = \(userLocation.coordinate.longitude)")
+        print("user longitude = \(userLocation.coordinate.longitude)")
        
+        
+        guard let location = locations.first else{
+            return
+        }
+        completion?(location)
+        manager.stopUpdatingLocation()
     }
-    
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error)
         {
             print("Error \(error)")
@@ -1916,9 +2089,14 @@ directions2.calculate{
         synth.speak(myUtterance)
         
     }
+    let kmlFileName = "Allowed area"
+    let kmlFileType="kml"
+    
+    var polygonView:MKPolygonRenderer!
+    var polygonCoordinatePoints:[CLLocationCoordinate2D] = []
     var shopName:[String] = []
     var shopCity:[String] = []
-    var newLocation : CLLocation!
+  
     func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
  
         
@@ -1936,7 +2114,11 @@ directions2.calculate{
         segmentedControl.isHidden = false
         let directionRequest = MKDirections.Request()
         
-}
+       
+        
+     
+        
+    }
     // 代理方法一:当获取到用户的位置的时候会来到该方法
     /// - Parameters:
     ///   - manager: 位置管理者
@@ -1944,8 +2126,6 @@ directions2.calculate{
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation],newLocation: CLLocation!, fromLocation oldLocation: CLLocation!) {
     //locations是一个保存着CLLocation对象的集合,我们一般都是取出last,因为他是最新的.
            print("定位到了")
-        
-        
     }
   
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
@@ -1976,15 +2156,12 @@ directions2.calculate{
             myView?.subtitleVisibility = .visible
         }
             
-            
-     return myView
-           
-    
-    }
+    return myView
+}
 
 
-// MARK: CLLocationManagerDelegate Methods
-   func locationManager(manager: CLLocationManager!, didUpdateToLocation newLocation: CLLocation!, fromLocation oldLocation: CLLocation!){
+   
+        func locationManager(manager: CLLocationManager!, didUpdateToLocation newLocation: CLLocation!, fromLocation oldLocation: CLLocation!){
             //drawing path or route covered
             if let oldLocationNew = oldLocation as CLLocation?{
                  let oldCoordinates = oldLocationNew.coordinate
@@ -2015,13 +2192,20 @@ directions2.calculate{
                 self.myMapView.setRegion(region1, animated: true)
             })
         }
+        func paeseKmlToMap(){
+            let path = Bundle.main.path(forResource: kmlFileName, ofType: kmlFileType)
+            
+            let url = URL(fileURLWithPath: path!)
+            
+            
+        }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // 印出目前所在位置座標
         
-        let currentLocation :CLLocation =
+          let currentLocation :CLLocation =
             locations[0] as CLLocation
           //總縮放範圍
-        let range:MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+          let range:MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
        
           //自身
           let myLocation = currentLocation.coordinate
@@ -2029,13 +2213,11 @@ directions2.calculate{
           
           //在地圖上顯示
           myMapView.setRegion(appearRegion, animated: true)
-        myMapView.showsUserLocation = true
+          myMapView.showsUserLocation = true
+        }
         
-        
-
-    }
-        
-    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
+      
+        func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
                 pr.strokeColor = UIColor.red
@@ -2046,21 +2228,10 @@ directions2.calculate{
         }
         //function to add annotation to map view
         func addAnnotationsOnMap(locationToPoint : CLLocation){
-
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = locationToPoint.coordinate
-            let geoCoder = CLGeocoder ()
-            geoCoder.reverseGeocodeLocation(locationToPoint, completionHandler: { (placemarks, error) -> Void in
-                if let placemarks = placemarks, placemarks.count > 0 {
-                    let placemark = placemarks[0]
-                    let addressDictionary = placemark.addressDictionary;
-                    annotation.title = addressDictionary?["Name"] as? String
-                    self.myMapView.addAnnotation(annotation)
-                }
-            })
-            
+           
             
         }
+        
         
         
         func locationManager(_ manager: CLLocationManager,didUpdateHeading newHeading:CLHeading){
@@ -2085,9 +2256,16 @@ directions2.calculate{
         }
         typealias JSONDictionary = [String : Any]
         
-        return nil
+        
+        
+   
+    
+
+
+    return nil
 
     }
+    
 }
 
 //QR code破解碼後開啟相對應ＡＰＰ
@@ -2132,16 +2310,7 @@ func captureOutput(captureOutput:AVCaptureOutput!,didOutputMetadataObjects metad
         
     }
 }
-func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
-        if overlay is MKPolyline {
-            var polylineRenderer = MKPolylineRenderer(overlay: overlay)
-            polylineRenderer.strokeColor = UIColor.blue
-            polylineRenderer.lineWidth = 5
-            return polylineRenderer
-        }
 
-        return nil
-    }
 private func callAPI() {
        // 根據網站的 Request tab info 我們拼出請求的網址
     let apiKey2 = "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5"
@@ -2168,15 +2337,8 @@ private func callAPI() {
            }
            
            do {
-               // 使用 JSONDecoder 去解開 data
-           
-               
-               // 改變 UI 的動作必須在主線程完成，所以將下面的 code 包在 DispatchQueue.main.async 的大括號裡面
                DispatchQueue.main.async {
-            
-                   // 因為我們用 Array<WeatherModel> 去解析 data，所以在使用的時候我們先取出第一筆資料ㄝ
-               
-            
+                 // 因為我們用 Array<WeatherModel> 去解析 data，所以在使用的時候我們先取出第一筆資料ㄝ
                }
                
            } catch {
@@ -2191,13 +2353,7 @@ private func callAPI() {
 
    }
 
-let json = """
-{
-  "name":"John Davis",
-  
-  
-}
-"""
+
 struct Resource<Model> {
     let url: URL
     let parse: (Data) throws -> Model
@@ -2210,6 +2366,7 @@ struct UpdateUserResponse: Decodable {
     let name: String
     let job: String
 }
+
 extension Resource {
     init(url: URL, parseJSON: @escaping (Any) throws -> Model) {
         self.url = url
@@ -2328,8 +2485,6 @@ extension UIView{
         }
     }
 }
-
-
 enum Result<Model> {
     case success(Model)
     case failure(Error)
@@ -2415,12 +2570,6 @@ struct User2: Codable {
     age = try container.decode(Int.self, forKey: .age)
   }
 }
-
-struct Acronym {
-    let id: Int
-    let short: String
-    let long: String
-}
 extension UIView{
 
     func showToast2(text: String){
@@ -2439,23 +2588,6 @@ extension UIView{
     }
 }
 typealias JSONDictionary = [String : Any]
-extension Acronym {
-    init(json: JSONDictionary) throws {
-        guard let id = json["id"] as? Int else {
-            throw SerializationError.missing("id")
-        }
-        guard let short = json["short"] as? String else {
-            throw SerializationError.missing("short")
-        }
-        guard let long = json["long"] as? String else {
-            throw SerializationError.missing("long")
-        }
-        self.id = id
-        self.short = short
-        self.long = long
-    }
-}
-
 
 extension AppDelegate: CLLocationManagerDelegate {
   func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
