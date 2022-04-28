@@ -246,7 +246,7 @@ import AEXML
         thread1=Thread(target: self, selector:#selector(ViewController.thread1ToDo), object: nil)
         thread1?.start()
         
-        
+        var locationManager: CLLocationManager!
         
         let mm = CMMotionManager()
         let device = UIDevice.current
@@ -285,25 +285,26 @@ import AEXML
        createTable()
   
    queryOneData()
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest;
-        locationManager.delegate = self;
+        
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.delegate = self
              
-                locationManager.requestWhenInUseAuthorization()             //尋求使用者是否授權APP得知位置
+        manager.requestWhenInUseAuthorization()             //尋求使用者是否授權APP得知位置
                                           //若是user有移動，可以將透過delegate知道位置顯示
-                locationManager.desiredAccuracy = kCLLocationAccuracyBest   //user位置追蹤精確程度，設置成最精確位置
-                locationManager.activityType = .automotiveNavigation        //設定使用者的位置模式，手機會去依照不同設定做不同的電力控制
-                locationManager.startUpdatingLocation()
+        manager.desiredAccuracy = kCLLocationAccuracyBest   //user位置追蹤精確程度，設置成最精確位置
+        manager.activityType = .automotiveNavigation        //設定使用者的位置模式，手機會去依照不同設定做不同的電力控制
+        manager.startUpdatingLocation()
         
         var status = CLLocationManager.authorizationStatus()
         if status == .notDetermined || status == .denied || status == .authorizedWhenInUse {
                // present an alert indicating location authorization required
                // and offer to take the user to Settings for the app via
                // UIApplication -openUrl: and UIApplicationOpenSettingsURLString
-               locationManager.requestAlwaysAuthorization()
-               locationManager.requestWhenInUseAuthorization()
+               manager.requestAlwaysAuthorization()
+               manager.requestWhenInUseAuthorization()
            }
-        locationManager.startUpdatingLocation()
-        locationManager.startUpdatingHeading()
+        manager.startUpdatingLocation()
+        manager.startUpdatingHeading()
         
         let sqlitePath = sqliteURL.path
                
@@ -481,7 +482,16 @@ import AEXML
                 print(content)
             }
         }.resume()
-        
+        let string = "Welcome to cloud logistic System"
+        let utterance = AVSpeechUtterance(string: string)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+
+        let synth = AVSpeechSynthesizer()
+        synth.speak(utterance)
+       
+        myUtterance = AVSpeechUtterance(string: "Hello World")
+                myUtterance.rate = 0.3
+        synth.speak(myUtterance)
         
         func queryOneData() {
             let queryString = "SELECT * FROM Contacts WHERE Id == 1;"
@@ -618,16 +628,7 @@ import AEXML
         print(soapRequest.xml)
         
         
-        let string = "Welcome to cloud logistic System"
-        let utterance = AVSpeechUtterance(string: string)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-
-        let synth = AVSpeechSynthesizer()
-        synth.speak(utterance)
-       
-        myUtterance = AVSpeechUtterance(string: "Hello World")
-                myUtterance.rate = 0.3
-        synth.speak(myUtterance)
+        
         
   
         let queue = DispatchQueue.global()
@@ -687,7 +688,7 @@ import AEXML
         locationManager.delegate = self;
    
         let center = UNUserNotificationCenter.current()
-        let locationManager = CLLocationManager()
+   
         locationManager.requestAlwaysAuthorization()
         locationManager.startMonitoringVisits()
 
