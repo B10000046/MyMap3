@@ -626,11 +626,6 @@ import AEXML
         book3.addChild(name: "publishDate", value: "2017-08-10")
         
         print(soapRequest.xml)
-        
-        
-        
-        
-  
         let queue = DispatchQueue.global()
         
        let layer = CALayer()
@@ -1459,11 +1454,6 @@ directions2.calculate{
         }
         periperalManager.updateValue(data, for: characteristic, onSubscribedCentrals: nil)
     }
-    
-    
-    
-    
-    
     func getNonExistingUser() {
         guard let url = URL(string: "https://reqres.in/api/users/100") else { return }
         
@@ -1534,16 +1524,6 @@ directions2.calculate{
         var postData:NSData;
         
         let url = NSURL(string: srtURL)!
-        
-        
-        
-    
-        
-        
-        
-        
-        
-        
     }
     
     
@@ -1671,14 +1651,7 @@ directions2.calculate{
             alertMessage.addAction(UIAlertAction(title:"ok",style:.default,handler:nil))
             self.present(alertMessage, animated: true, completion: nil)
         }
-        
-     
-        
-     
-        
-        
-        
-    }
+  }
   func prepareForSeque(seque:UIStoryboardSegue,sender:AnyObject?){
         if seque.identifier == "showSteps"{
             let destinationController = seque.destination as! UINavigationController
@@ -1823,10 +1796,6 @@ directions2.calculate{
          
         }
     }
-
-    
-    
-    
     func mapView(_ mapView: MKMapView, rendererFor
                     overlay: MKOverlay) -> MKOverlayRenderer {
         let renderer = MKPolylineRenderer(overlay: overlay)
@@ -1863,8 +1832,6 @@ directions2.calculate{
             }
             
         }
-                             
-       
     }
     
     func checkLocationAuthorization(){
@@ -2116,10 +2083,7 @@ directions2.calculate{
         let directionRequest = MKDirections.Request()
         
        
-        
-     
-        
-    }
+   }
     // 代理方法一:当获取到用户的位置的时候会来到该方法
     /// - Parameters:
     ///   - manager: 位置管理者
@@ -2257,12 +2221,6 @@ directions2.calculate{
         }
         typealias JSONDictionary = [String : Any]
         
-        
-        
-   
-    
-
-
     return nil
 
     }
