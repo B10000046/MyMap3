@@ -1164,7 +1164,6 @@ directions2.calculate{
         for i in 1...100{
             print("I'm thread1-- \(i)")
             //加入當前標記
-            
         }
     }
    
@@ -1457,7 +1456,6 @@ directions2.calculate{
     func getNonExistingUser() {
         guard let url = URL(string: "https://reqres.in/api/users/100") else { return }
         
-      
     }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central:CBCentral,didSubscribeTo characteristic:CBCharacteristic) {
@@ -1595,10 +1593,7 @@ directions2.calculate{
             
             let cell = _tableView.cellForRow(at: indexPath)
             cell?.accessoryType = .checkmark
-            
-            
-        
-        })
+       })
         optionMenu.addAction(checkInAction)
      let favoriteAction = UIAlertAction(title: "Mark as favorite", style: .default, handler: {(action:UIAlertAction!)->Void in
             
@@ -2102,9 +2097,9 @@ directions2.calculate{
     func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
     switch state {
     case .inside:
-    print("进入区域状态 -> \\(region.identifier)")
+    print("進入區域状态 -> \\(region.identifier)")
     case .outside:
-    print("离开区域状态 -> \\(region.identifier)")
+    print("離開區域状态 -> \\(region.identifier)")
     case .unknown:
     print("没有获取用户的位置")
        }
@@ -2308,9 +2303,7 @@ private func callAPI() {
        
        // 啟動 task
        dataTask.resume()
-    
-
-   }
+ }
 
 
 struct Resource<Model> {
