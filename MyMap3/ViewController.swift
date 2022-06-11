@@ -522,26 +522,17 @@ import AEXML
         myMapView.addAnnotation(objectAnnotation)
         var location = CLLocation(latitude:22.999034,longitude:120.212868)
         var region = MKCoordinateRegion(center:location.coordinate,latitudinalMeters:300,longitudinalMeters: 300)
-        
-        
         objectAnnotation = MKPointAnnotation()
         objectAnnotation.coordinate = CLLocation(latitude: 24.441304, longitude: 120.74123).coordinate
         objectAnnotation.title = "飛牛牧場"
         objectAnnotation.subtitle = "地址|35750苗栗縣通霄鎮南和里166號"
         myMapView.addAnnotation(objectAnnotation)
-        
         objectAnnotation = MKPointAnnotation()
         objectAnnotation.coordinate = CLLocation(latitude: 23.760679, longitude: 120.365768).coordinate
         objectAnnotation.title = "千巧谷牧場"
         objectAnnotation.subtitle = "地址|637雲林縣崙背鄉東興路182之32號"
         myMapView.bounds = CGRect(x:400,y:400,width: 400,height: 600)
         myMapView.addAnnotation(objectAnnotation)
-        
-        objectAnnotation1 = MKPointAnnotation()
-        objectAnnotation1.coordinate = CLLocation(latitude: 37.3852, longitude: -122.1141).coordinate
-        objectAnnotation1.title = "加利福尼亞洲"
-        objectAnnotation1.subtitle = ""
-        myMapView.addAnnotation(objectAnnotation1)
         if(objectAnnotation.title)!=="飛牛牧場"{
            annView!.pinTintColor = UIColor.green
         }
