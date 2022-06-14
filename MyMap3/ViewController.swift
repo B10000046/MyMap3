@@ -1520,7 +1520,7 @@ import AEXML
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
             let conten = UNMutableNotificationContent()
             conten.title = "已離開"
-            conten.body = "請回來"
+            conten.body = "已離開"
             conten.sound = .default
             let request = UNNotificationRequest(identifier: "back", content: conten, trigger: nil)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
