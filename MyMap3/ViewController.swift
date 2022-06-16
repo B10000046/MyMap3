@@ -460,7 +460,7 @@ import AEXML
                         }
             let route = response.routes[0]
             self.myMapView.addOverlay((route.polyline), level: MKOverlayLevel.aboveRoads)
-    }
+        }
         let sourceLocation2 = CLLocationCoordinate2D(latitude: 25.033671, longitude: 121.564427)
         let destinationLocation2 = CLLocationCoordinate2D(latitude: 22.42, longitude: 120.21)
    
@@ -1278,8 +1278,6 @@ import AEXML
             directionRequest.transportType = .automobile
             
             let direction = MKDirections(request: directionRequest)
-            
-            
             direction.calculate { (response, error) in
                 guard let response = response else {
                     if let error = error {
@@ -1504,11 +1502,9 @@ import AEXML
         segmentedControl.isHidden = false
         let directionRequest = MKDirections.Request()
     }
-    
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation],newLocation: CLLocation!, fromLocation oldLocation: CLLocation!) {
            print("定位到了")
     }
-  
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
            let conten = UNMutableNotificationContent()
            conten.title = "已進入區域"
@@ -1516,7 +1512,7 @@ import AEXML
            conten.sound = .default
            let request = UNNotificationRequest(identifier: "big", content: conten, trigger: nil)
            UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
-       }
+    }
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
             let conten = UNMutableNotificationContent()
             conten.title = "已離開"
@@ -1601,13 +1597,12 @@ import AEXML
             
             let geodesic = MKGeodesicPolyline(coordinates: points, count: 5)
             myMapView.addOverlay(geodesic)
-            
             UIView.animate(withDuration: 1.5, animations: { () -> Void in
                 let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
                 let region1 = MKCoordinateRegion(center: point1, span: span)
                 self.myMapView.setRegion(region1, animated: true)
             })
-        }
+    }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // 印出目前所在位置座標
         myMapView.removeAnnotation(newPin)
