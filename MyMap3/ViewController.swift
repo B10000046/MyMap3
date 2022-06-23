@@ -356,10 +356,10 @@ import AEXML
             var dbPath = "/Users/siemonyan/Desktop/GeoCoder3/GeoCoder3"
             var db: OpaquePointer?
             if sqlite3_open(dbPath, &db) == SQLITE_OK {
-                print("成功打开数据库，路径：\(dbPath)")
+                print("成功打開資料庫，路徑：\(dbPath)")
                 return db
             } else {
-                print( "打开数据库失败")
+                print( "打開資料庫失败")
                 return nil
             }
         }
