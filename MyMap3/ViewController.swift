@@ -13,6 +13,7 @@ import CoreData
 import iAd
 import LocalAuthentication
 import AEXML
+import Charts
 @objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate{
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
@@ -40,7 +41,7 @@ import AEXML
         return 1
     }
     let synth = AVSpeechSynthesizer()
-       var myUtterance = AVSpeechUtterance(string: "Hello")
+    var myUtterance = AVSpeechUtterance(string: "Hello")
     private static var kivaLoanURL = "https://api.kivaws.org/v1/loans/newest.json"
     var userLocation: CLLocation?
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -52,6 +53,7 @@ import AEXML
         
         return cell
     }
+    var chartView: LineChartView!
     let url = URL(string: "https://api.kivaws.org/v1/loans/newest.json")!
     var db :OpaquePointer? = nil
     var statement :OpaquePointer? = nil
@@ -75,6 +77,13 @@ import AEXML
     private static var kivaLoanURL1 = "https://api.kivaws.org/v1/loans/newest.json"
     let decoder = JSONDecoder()
     let request:MKDirections.Request = MKDirections.Request()
+    //BLE
+    var centralManager:CBCentralManager!
+    var sensorTagPeripheral:CBCentralManager!
+    let IRTemperatureServiceUUID = CBUUID(string: "F000AA00-0451-4000-B000-000000000000")
+    let IRTemperatureDataUUID   = CBUUID(string: "F000AA01-0451-4000-B000-000000000000")
+    let IRTemperatureConfigUUID = CBUUID(string: "F000AA02-0451-4000-B000-000000000000")
+    
     var bleManager: BLEManagable?
     let lm = CLLocationManager()
     let sessionConfiguration = URLSessionConfiguration.default
@@ -111,6 +120,7 @@ import AEXML
     @IBOutlet weak var password_input: UITextField!
     @IBOutlet weak var login_button: UIButton!
     @IBOutlet weak var weatherLabel: UILabel!
+    @IBOutlet weak var routeMap: MKMapView!
     let manager = CLLocationManager()
     var completion:((CLLocation)->Void)?
     public func getUserLocation(completion:@escaping ((CLLocation)-> Void)){
@@ -139,6 +149,15 @@ import AEXML
         }else{
             print("此裝置沒有接近感測器")
         }
+        let centerCoordinate = CLLocationCoordinate2D(latitude: 23.14, longitude: 120.53)
+        let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        let region = MKCoordinateRegion(center: centerCoordinate, span: span)
+        myMapView.setRegion(region, animated: false)
+        
+        for randCoordinate in makeRandomCoordinates(in: region) {
+            let annotation = MapItem(coordinate: randCoordinate)
+            myMapView.addAnnotation(annotation)
+        }
         let dst:String = NSHomeDirectory()+"/Documents/Personal.db"
         if sqlite3_open(dst,&db) !=  SQLITE_OK {
             print("can not open db")
@@ -159,7 +178,9 @@ import AEXML
         createTable()
         queryOneData()
         zoomToRegion()
-        deliveryOverlay(restaurantName:"Connie's Pizza",radius: 5000)
+        deliveryOverlay(pastureName:"Connie's Pizza",radius: 5000)
+        deliveryOverlayFly(pastureName: "飛牛牧場", radius: 5000)
+        deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.delegate = self
         manager.requestWhenInUseAuthorization()
@@ -211,7 +232,15 @@ import AEXML
 
           let directionsURL = URL(string: directionsRequest)!
         UIApplication.shared.openURL(directionsURL)
-        open(scheme: "omgooglemaps://?saddr=Google+Inc,+8th+Avenue,+New+York,+NY&daddr=John+F.+Kennedy+International+Airport,+Van+Wyck+Expressway,+Jamaica,+New+York&directionsmode=transit")
+            myMapView.register(
+                MapItemAnnotationView.self,
+                forAnnotationViewWithReuseIdentifier: MKMapViewDefaultAnnotationViewReuseIdentifier)
+            myMapView.register(
+                ClusterAnnotationView.self,
+                forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
+
+            
+            open(scheme: "omgooglemaps://?saddr=Google+Inc,+8th+Avenue,+New+York,+NY&daddr=John+F.+Kennedy+International+Airport,+Van+Wyck+Expressway,+Jamaica,+New+York&directionsmode=transit")
         } else {
           NSLog("Can't use comgooglemaps-x-callback:// on this device.")
         }
@@ -280,7 +309,7 @@ import AEXML
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         let synth = AVSpeechSynthesizer()
         synth.speak(utterance)
-         myUtterance = AVSpeechUtterance(string: "Hello World")
+        myUtterance = AVSpeechUtterance(string: "Hello World")
                 myUtterance.rate = 0.3
         synth.speak(myUtterance)
         func zoomToRegion() {
@@ -288,10 +317,44 @@ import AEXML
             let region = MKCoordinateRegion(center: location, latitudinalMeters: 5000.0, longitudinalMeters: 7000.0)
             myMapView.setRegion(region, animated: true)
         }
-        func deliveryOverlay(restaurantName:String, radius:CLLocationDistance){
-            let center = CLLocationCoordinate2D(latitude: 23.15, longitude: 120.53)
+        func deliveryOverlay(pastureName:String, radius:CLLocationDistance){
+            let center = CLLocationCoordinate2D(latitude: 23.692046147786932, longitude: 120.53154473204215)
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
+        }
+        func deliveryOverlayFly(pastureName:String, radius:CLLocationDistance){
+            let center2 = CLLocationCoordinate2D(latitude: 24.478058, longitude: 120.724436)
+            let circle2 = MKCircle(center: center2, radius: radius)
+            myMapView.addOverlay(circle2)
+        }
+        func deliveryOverlayChian(pastureName:String, radius:CLLocationDistance){
+            let center3 = CLLocationCoordinate2D(latitude: 23.752324, longitude: 120.357767)
+            let circle3 = MKCircle(center: center3, radius: radius)
+            myMapView.addOverlay(circle3)
+        }
+        func makeRandomCoordinates(_ number: Int = 1000, in region: MKCoordinateRegion) -> [CLLocationCoordinate2D] {
+            let minLat = region.center.latitude - (region.span.latitudeDelta * 2)
+            let maxLat = region.center.latitude + (region.span.latitudeDelta * 2)
+            
+            let minLon = region.center.longitude - (region.span.longitudeDelta)
+            let maxLon = region.center.longitude + (region.span.longitudeDelta)
+            
+            let adjusted: [Int] = [minLat, maxLat, minLon, maxLon].map { Int($0 * 10000) }
+            let latDelta = adjusted[1] - adjusted[0]
+            let lonDelta = abs(adjusted[3] - adjusted[2])
+            
+            var coordinates = [CLLocationCoordinate2D]()
+            for _ in 0...number {
+                let latRand = Int(arc4random_uniform(UInt32(latDelta)))
+                let lonRand = Int(arc4random_uniform(UInt32(lonDelta))) * -1
+                
+                let lat: Double = minLat + (Double(latRand) / 10000.0)
+                let lon: Double = minLon - (Double(lonRand) / 10000.0)
+                
+                coordinates.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
+            }
+            
+            return coordinates
         }
         func open(scheme: String) {
                 if let url = URL(string: scheme) {
@@ -356,10 +419,10 @@ import AEXML
             var dbPath = "/Users/siemonyan/Desktop/GeoCoder3/GeoCoder3"
             var db: OpaquePointer?
             if sqlite3_open(dbPath, &db) == SQLITE_OK {
-                print("成功打開資料庫，路徑：\(dbPath)")
+                print("成功打开数据库，路径：\(dbPath)")
                 return db
             } else {
-                print( "打開資料庫失败")
+                print( "打开数据库失败")
                 return nil
             }
         }
@@ -460,18 +523,14 @@ import AEXML
                         }
             let route = response.routes[0]
             self.myMapView.addOverlay((route.polyline), level: MKOverlayLevel.aboveRoads)
-        }
+       }
         let sourceLocation2 = CLLocationCoordinate2D(latitude: 25.033671, longitude: 121.564427)
         let destinationLocation2 = CLLocationCoordinate2D(latitude: 22.42, longitude: 120.21)
    
         let sourcePlacemark2 = MKPlacemark(coordinate: sourceLocation2, addressDictionary: nil)
         let destinationPlacemark2 = MKPlacemark(coordinate: destinationLocation2, addressDictionary: nil)
-        
-        // 4.
         let sourceMapItem2 = MKMapItem(placemark: sourcePlacemark2)
         let destinationMapItem2 = MKMapItem(placemark: destinationPlacemark2)
-        
-        // 5.
         let sourceAnnotation2 = MKPointAnnotation()
         sourceAnnotation2.title = "Taipei City"
 
@@ -521,7 +580,7 @@ import AEXML
         objectAnnotation.subtitle = "艋舺公園位於龍山寺旁邊，原名為「萬華十二號公園」。"
         myMapView.addAnnotation(objectAnnotation)
         var location = CLLocation(latitude:22.999034,longitude:120.212868)
-        var region = MKCoordinateRegion(center:location.coordinate,latitudinalMeters:300,longitudinalMeters: 300)
+        var region2 = MKCoordinateRegion(center:location.coordinate,latitudinalMeters:300,longitudinalMeters: 300)
         objectAnnotation = MKPointAnnotation()
         objectAnnotation.coordinate = CLLocation(latitude: 24.441304, longitude: 120.74123).coordinate
         objectAnnotation.title = "飛牛牧場"
@@ -573,6 +632,11 @@ import AEXML
                 self.myMapView.addAnnotation(item.placemark)
             }
         }
+        myMapView.userTrackingMode = MKUserTrackingMode.followWithHeading
+        _ = locationManager
+        let item = MKUserTrackingBarButtonItem(mapView: myMapView)
+        navigationItem.leftBarButtonItem = item
+        
         var status3 = CLLocationManager.authorizationStatus()
         if status3 == .notDetermined || status == .denied || status == .authorizedWhenInUse {
                locationManager.requestAlwaysAuthorization()
@@ -613,8 +677,30 @@ import AEXML
               print(error.code)
               print(error.description)
         }
+        //创建折线图组件对象
+                chartView = LineChartView()
+                chartView.frame = CGRect(x: 20, y: 80, width: self.view.bounds.width - 40,
+                                         height: 100)
+                self.view.addSubview(chartView)
+                 
+                //生成20条随机数据
+                var dataEntries = [ChartDataEntry]()
+                for i in 0..<20 {
+                    let y = arc4random()%100
+                    let entry = ChartDataEntry.init(x: Double(i), y: Double(y))
+                    dataEntries.append(entry)
+                }
+                //这50条数据作为1根折线里的所有数据
+        let chartDataSet = LineChartDataSet(entries: dataEntries, label: "图例1")
+                //目前折线图只包括1根折线
+                let chartData = LineChartData(dataSets: [chartDataSet])
+         
+                //设置折现图数据
+        chartView.data = chartData
         checkLocationService()
-        deliveryOverlay(restaurantName: "Connie's Pizza",radius: 2000)
+        deliveryOverlay(pastureName: "Connie's Pizza",radius: 5000)
+        deliveryOverlayFly(pastureName: "飛牛牧場",radius: 5000)
+        deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
         getDirection()
         //設定座標
         let flycow = CLLocationCoordinate2D(latitude:24.441304,longitude: 120.74123)
@@ -731,13 +817,20 @@ import AEXML
             return pinView;
         }
     }
-    func authenticateWithTouchID(){
-        let localAuthContext = LAContext()
-        let resonText = "Authentication is required to sign in AppCoda"
-        var authError:NSError?
-        if !localAuthContext.canEvaluatePolicy(LAPolicy.deviceOwnerAuthentication, error: &authError){
-            print(authError?.localizedDescription)
-            return
+    func showRoute(_ response: MKDirections.Response) {
+
+        for route in response.routes {
+
+            routeMap.addOverlay(route.polyline,
+                    level: MKOverlayLevel.aboveRoads)
+            for step in route.steps {
+                print(step.instructions)
+            }
+        }
+        if let coordinate = userLocation?.coordinate{
+            let region2 =
+            MKCoordinateRegion(center: coordinate, latitudinalMeters: 2000, longitudinalMeters: 2000)
+            routeMap.setRegion(region2, animated: true)
         }
     }
     private func callWeatherAPI() {
@@ -804,7 +897,7 @@ import AEXML
                 }
             })
             task.resume()
-        }
+    }
     private func printExampleFromReadme() {
         guard
             let xmlPath = Bundle.main.path(forResource: "example", ofType: "xml"),
@@ -838,12 +931,9 @@ import AEXML
         if motion == .motionShake{
             print("裝置搖晃中")
             self.view.showToast(text: "裝置搖晃中\n\n")
-            let text = "裝置搖晃中"
+            let text = "偵測裝置搖晃"
             if let language = NSLinguisticTagger.dominantLanguage(for: text) {
-
-                //we now know the language of the text
-
-                let utterance = AVSpeechUtterance(string: text)
+               let utterance = AVSpeechUtterance(string: text)
                 utterance.voice = AVSpeechSynthesisVoice(language: language) //use the detected language
             let synth = AVSpeechSynthesizer()
                 synth.speak(utterance)
@@ -961,7 +1051,7 @@ import AEXML
         func setup() {
             myMapView.delegate = self
             showCircle(coordinate: initialCoordinate,
-                       radius: 1000)
+                       radius: 5000)
         }
         func showCircle(coordinate: CLLocationCoordinate2D,
                         radius: CLLocationDistance) {
@@ -1059,7 +1149,7 @@ import AEXML
             print(name)
         }
    }
-        func showAlert(title: String, message: String, buttonTitle: String) {
+   func showAlert(title: String, message: String, buttonTitle: String) {
             let alert = UIAlertController(title: title,
                                           message: message,
                                           preferredStyle: .alert)
@@ -1069,7 +1159,7 @@ import AEXML
             DispatchQueue.main.async {
                 self.present(alert, animated: true, completion: nil)
             }
-        }
+    }
     private func addAnotation(){
         let appleParkAnnotation = MKPointAnnotation()
         appleParkAnnotation.title = "Apple Park"
@@ -1083,7 +1173,8 @@ import AEXML
         myMapView.addAnnotation(appleParkAnnotation)
         myMapView.addAnnotation(ortegapartAnnotation)
     }
-    func showRoute(_ response: MKDirections.Response) {
+    
+    func showRoute2(_ response: MKDirections.Response) {
         
         for route in response.routes {
             
@@ -1245,7 +1336,7 @@ import AEXML
 
              newPin.coordinate = location.coordinate
          myMapView.addAnnotation(newPin)
-   }
+    }
     var dataArray = [Int] ()
     func createPath(sourceLocation : CLLocationCoordinate2D, destinationLocation : CLLocationCoordinate2D,didUpdateLocations locations: [CLLocation]!) {
             let sourcePlaceMark = MKPlacemark(coordinate: sourceLocation, addressDictionary: nil)
@@ -1278,6 +1369,8 @@ import AEXML
             directionRequest.transportType = .automobile
             
             let direction = MKDirections(request: directionRequest)
+            
+            
             direction.calculate { (response, error) in
                 guard let response = response else {
                     if let error = error {
@@ -1306,7 +1399,7 @@ import AEXML
 
                  newPin.coordinate = location.coordinate
              myMapView.addAnnotation(newPin)
-        }
+     }
      func mapViewDidFinishLoadingMap(_ mapView: MKMapView,didUpdateLocations locations: [CLLocation]!) {
         print("載入地圖完成時")
        
@@ -1370,6 +1463,7 @@ import AEXML
                     print("add an annotation2.")
                 }
             }
+            
         }
         func updateViews() {
           let dataForViews = myDataQueue.sync { return dataArray }
@@ -1459,6 +1553,11 @@ import AEXML
         } else {
             print("Unknown language")
         }
+        let currentSpan = myMapView.region.span
+        let zoomSpan = MKCoordinateSpan(latitudeDelta: currentSpan.latitudeDelta / 2.0, longitudeDelta: currentSpan.longitudeDelta / 2.0)
+        let zoomCoordinate = view.annotation?.coordinate ?? myMapView.region.center
+        let zoomed = MKCoordinateRegion(center: zoomCoordinate, span: zoomSpan)
+        myMapView.setRegion(zoomed, animated: true)
     }
     let kmlFileName = "Allowed area"
     let kmlFileType="kml"
@@ -1502,9 +1601,11 @@ import AEXML
         segmentedControl.isHidden = false
         let directionRequest = MKDirections.Request()
     }
+    
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation],newLocation: CLLocation!, fromLocation oldLocation: CLLocation!) {
            print("定位到了")
     }
+  
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
            let conten = UNMutableNotificationContent()
            conten.title = "已進入區域"
@@ -1512,11 +1613,11 @@ import AEXML
            conten.sound = .default
            let request = UNNotificationRequest(identifier: "big", content: conten, trigger: nil)
            UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
-    }
+       }
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
             let conten = UNMutableNotificationContent()
             conten.title = "已離開"
-            conten.body = "已離開"
+            conten.body = "請回來"
             conten.sound = .default
             let request = UNNotificationRequest(identifier: "back", content: conten, trigger: nil)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
@@ -1528,7 +1629,7 @@ import AEXML
                 // 2.準備 region 會用到的相關屬性
                 let title = "Lorrenzillo's"
                 let coordinate = CLLocationCoordinate2DMake(23.69,120.53)
-                let regionRadius = 10.0
+                let regionRadius = 100.0
                 // 3. 設置 region 的相關屬性
                 let region = CLCircularRegion(center: CLLocationCoordinate2D(
                     latitude: coordinate.latitude,
@@ -1597,12 +1698,13 @@ import AEXML
             
             let geodesic = MKGeodesicPolyline(coordinates: points, count: 5)
             myMapView.addOverlay(geodesic)
+            
             UIView.animate(withDuration: 1.5, animations: { () -> Void in
                 let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
                 let region1 = MKCoordinateRegion(center: point1, span: span)
                 self.myMapView.setRegion(region1, animated: true)
             })
-    }
+        }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // 印出目前所在位置座標
         myMapView.removeAnnotation(newPin)
@@ -1951,5 +2053,102 @@ extension MKPointAnnotation {
 }}
 public extension UIView {
     func makeToast(_ message: String?, duration: TimeInterval = ToastManager.shared.duration, position: ToastPosition = ToastManager.shared.position, title: String? = nil, image: UIImage? = nil, style: ToastStyle = ToastManager.shared.style, completion: ((_ didTap: Bool) -> Void)? = nil) {
+    }
+}
+final class MapItem: NSObject, MKAnnotation {
+    enum ItemType: UInt32 {
+        case green = 0
+        case orange = 1
+        
+        var image: UIImage {
+            switch self {
+            case .green:
+                return #imageLiteral(resourceName: "annotation")
+            case .orange:
+                return #imageLiteral(resourceName: "annotation_orange")
+            }
+        }
+    }
+    
+    let coordinate: CLLocationCoordinate2D
+    let itemType: ItemType
+    var image: UIImage { return itemType.image }
+    
+    init(coordinate: CLLocationCoordinate2D) {
+        self.coordinate = coordinate
+        self.itemType = ItemType(rawValue: arc4random_uniform(2)) ?? .green
+    }
+}
+final class MapItemAnnotationView: MKAnnotationView {
+    
+    override var annotation: MKAnnotation? {
+        didSet {
+            guard let mapItem = annotation as? MapItem else { return }
+            
+            clusteringIdentifier = "MapItem"
+            image = mapItem.image
+        }
+    }
+}
+final class ClusterAnnotationView: MKAnnotationView {
+    
+    override var annotation: MKAnnotation? {
+        didSet {
+            guard let cluster = annotation as? MKClusterAnnotation else { return }
+            displayPriority = .defaultHigh
+            
+            let rect = CGRect(x: 0, y: 0, width: 40, height: 40)
+         
+        }
+    }
+}
+extension UIGraphicsImageRenderer {
+    static func image(for annotations: [MKAnnotation], in rect: CGRect) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: rect.size)
+        
+        let totalCount = annotations.count
+        let orangeCount = annotations.count
+        
+        let countText = "\(totalCount)"
+        
+        return renderer.image { _ in
+            UIColor(red: 126 / 255.0, green: 211 / 255.0, blue: 33 / 255.0, alpha: 1.0).setFill()
+            UIBezierPath(ovalIn: rect).fill()
+            
+            UIColor(red: 245 / 255.0, green: 166 / 255.0, blue: 35 / 255.0, alpha: 1.0).setFill()
+            let piePath = UIBezierPath()
+            piePath.addArc(withCenter: CGPoint(x: 20, y: 20), radius: 20,
+                           startAngle: 0, endAngle: (CGFloat.pi * 2.0 * CGFloat(orangeCount)) / CGFloat(totalCount),
+                           clockwise: true)
+            piePath.addLine(to: CGPoint(x: 20, y: 20))
+            piePath.close()
+            piePath.fill()
+            
+            UIColor.white.setFill()
+            UIBezierPath(ovalIn: CGRect(x: 8, y: 8, width: 24, height: 24)).fill()
+            
+        }
+    }
+}
+extension Sequence where Element == MKAnnotation {
+    var orangeCount: Int {
+        return self
+            .flatMap { $0 as? MapItem }
+            .filter { $0.itemType == .orange }
+            .count
+    }
+}
+
+extension String {
+    func drawForCluster(in rect: CGRect) {
+        let attributes = [ NSAttributedString.Key.foregroundColor: UIColor.black,
+                           NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 14)]
+        let textSize = self.size(withAttributes: attributes)
+        let textRect = CGRect(x: (rect.width / 2) - (textSize.width / 2),
+                              y: (rect.height / 2) - (textSize.height / 2),
+                              width: textSize.width,
+                              height: textSize.height)
+        
+        self.draw(in: textRect, withAttributes: attributes)
     }
 }
