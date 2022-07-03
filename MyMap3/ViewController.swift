@@ -12,7 +12,6 @@ import Foundation
 import CoreData
 import iAd
 import LocalAuthentication
-import AEXML
 import Charts
 @objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate{
     var annotation: MKPointAnnotation?
@@ -32,7 +31,6 @@ import Charts
                                     autoreleaseFrequency: .workItem,
                                     target: nil)
     let apiKey2 = "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5"
-    let soapRequest = AEXMLDocument()
     var restaurantNames = ["teaha","CaffeLatte","Espresso","Americano"]
     private var appDelegate = UIApplication.shared.delegate as! AppDelegate
     
@@ -80,10 +78,7 @@ import Charts
     //BLE
     var centralManager:CBCentralManager!
     var sensorTagPeripheral:CBCentralManager!
-    let IRTemperatureServiceUUID = CBUUID(string: "F000AA00-0451-4000-B000-000000000000")
-    let IRTemperatureDataUUID   = CBUUID(string: "F000AA01-0451-4000-B000-000000000000")
-    let IRTemperatureConfigUUID = CBUUID(string: "F000AA02-0451-4000-B000-000000000000")
-    
+    var restaurant2:Restaurant!
     var bleManager: BLEManagable?
     let lm = CLLocationManager()
     let sessionConfiguration = URLSessionConfiguration.default
@@ -244,8 +239,6 @@ import Charts
         } else {
           NSLog("Can't use comgooglemaps-x-callback:// on this device.")
         }
-        printExampleFromReadme()
-        let soapRequest = AEXMLDocument()
         captureSession.sessionPreset = AVCaptureSession.Preset.photo
         let url5 = URL(string: "https://foodprint.ws/j_spring_security_check")!
         var request5 = URLRequest(url: url5)
@@ -452,8 +445,6 @@ import Charts
         myLocationManager.startUpdatingLocation()
         myLocationManager.startUpdatingHeading()
         let fullSize = UIScreen.main.bounds.size
-        let anns = [MKPointAnnotation(),MKPointAnnotation()]
-        let url6 = Bundle.main.url(forResource:"test",withExtension: "json")
         myMapView = MKMapView(frame: CGRect(x: 0, y: 20, width: fullSize.width, height: fullSize.height - 20))
         myMapView.showsUserLocation = true
         myMapView.delegate = self
@@ -567,18 +558,13 @@ import Charts
           location.requestWhenInUseAuthorization();
           location.startUpdatingLocation();
           location.distanceFilter = CLLocationDistance(10);
-   let center2:CLLocation = CLLocation(latitude: 25.05, longitude: 121.515)
+        let center2:CLLocation = CLLocation(latitude: 25.05, longitude: 121.515)
         let currentRegion = MKCoordinateRegion(center: center2.coordinate, span: currentLocationSpan)
         myMapView.setRegion(currentRegion, animated: true)
         var annView = myMapView.dequeueReusableAnnotationView(withIdentifier: "pin") as? MKPinAnnotationView
         self.view.addSubview(myMapView)
         var points3 = [CLLocationCoordinate2D]()
         var objectAnnotation = MKPointAnnotation()
-        var objectAnnotation1 = MKPointAnnotation()
-        objectAnnotation.coordinate = CLLocation(latitude: 25.036798, longitude: 121.499962).coordinate
-        objectAnnotation.title = "艋舺公園"
-        objectAnnotation.subtitle = "艋舺公園位於龍山寺旁邊，原名為「萬華十二號公園」。"
-        myMapView.addAnnotation(objectAnnotation)
         var location = CLLocation(latitude:22.999034,longitude:120.212868)
         var region2 = MKCoordinateRegion(center:location.coordinate,latitudinalMeters:300,longitudinalMeters: 300)
         objectAnnotation = MKPointAnnotation()
@@ -662,6 +648,13 @@ import Charts
         self.myMapView.isPitchEnabled = true
         print("present location : (newLocation.coordinate.latitude), (newLocation.coordinate.longitude)")
         let url4:NSURL! = NSURL(string: "http://www.hangge.com")
+        myMapView.delegate = self
+        if #available(iOS 9.0, *) {
+            myMapView.showsCompass = true
+            myMapView.showsScale = true
+            myMapView.showsTraffic = true
+        }
+        
         //创建请求对象
         let urlRequest:NSURLRequest = NSURLRequest(url: url4! as URL)
         //响应对象
@@ -898,19 +891,7 @@ import Charts
             })
             task.resume()
     }
-    private func printExampleFromReadme() {
-        guard
-            let xmlPath = Bundle.main.path(forResource: "example", ofType: "xml"),
-            let data = try? Data(contentsOf: URL(fileURLWithPath: xmlPath))
-        else {
-            print("resource not found!")
-            return
-        }
-        var options = AEXMLOptions()
-        options.parserSettings.shouldProcessNamespaces = false
-        options.parserSettings.shouldReportNamespacePrefixes = false
-        options.parserSettings.shouldResolveExternalEntities = false
-    }
+
     func peripheralManager(_ peripheral: CBPeripheralManager) {
         guard peripheral.state == .poweredOn else{
             print(peripheral.state.rawValue)
@@ -1306,7 +1287,7 @@ import Charts
             annotationView!.pinTintColor = UIColor.blue
         }
         let leftIconView = UIImageView(frame: CGRect.init(x: 0, y: 0, width: 33, height: 33))
-        leftIconView.image = UIImage(named: "image1")
+        leftIconView.image = UIImage(named: "posatelier")
         annotationView?.leftCalloutAccessoryView = leftIconView
         let button = UIButton(type: .detailDisclosure) as UIButton
         annotationView?.rightCalloutAccessoryView = button
@@ -1617,7 +1598,7 @@ import Charts
     func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
             let conten = UNMutableNotificationContent()
             conten.title = "已離開"
-            conten.body = "請回來"
+            conten.body = "已離開"
             conten.sound = .default
             let request = UNNotificationRequest(identifier: "back", content: conten, trigger: nil)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
@@ -1735,6 +1716,50 @@ import Charts
                        return circleRenderer
                    }
             return nil
+        }
+        // MARK: - MKMapViewDelegate methods
+        
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            let identifier = "MyPin"
+            
+            if annotation.isKind(of: MKUserLocation.self) {
+                return nil
+            }
+            
+            // Reuse the annotation if possible
+            var annotationView: MKAnnotationView?
+            
+            if #available(iOS 11.0, *) {
+                var markerAnnotationView: MKMarkerAnnotationView? = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                
+                if markerAnnotationView == nil {
+                    markerAnnotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                    markerAnnotationView?.canShowCallout = true
+                }
+                
+                markerAnnotationView?.glyphText = "😋"
+                markerAnnotationView?.markerTintColor = UIColor.orange
+            
+                annotationView = markerAnnotationView
+                
+            } else {
+                
+                var pinAnnotationView: MKPinAnnotationView? = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKPinAnnotationView
+                
+                if pinAnnotationView == nil {
+                    pinAnnotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                    pinAnnotationView?.canShowCallout = true
+                    pinAnnotationView?.pinTintColor = UIColor.orange
+                }
+                
+                annotationView = pinAnnotationView
+            }
+            
+            let leftIconView = UIImageView(frame: CGRect.init(x: 0, y: 0, width: 53, height: 53))
+            leftIconView.image = UIImage(named: "posatelier")
+            annotationView?.leftCalloutAccessoryView = leftIconView
+                
+            return annotationView
         }
         enum SerializationError: Error {
             case missing(String)
@@ -2138,7 +2163,6 @@ extension Sequence where Element == MKAnnotation {
             .count
     }
 }
-
 extension String {
     func drawForCluster(in rect: CGRect) {
         let attributes = [ NSAttributedString.Key.foregroundColor: UIColor.black,
