@@ -176,6 +176,12 @@ import Charts
         deliveryOverlay(pastureName:"Connie's Pizza",radius: 5000)
         deliveryOverlayFly(pastureName: "飛牛牧場", radius: 5000)
         deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
+        deliveryOverlayResua(pastureName: "瑞穗牧場", radius: 5000)
+        deliveryOverlayHuya(pastureName: "禾野牧場", radius: 5000)
+        deliveryOverlayYunhu(pastureName: "楊和牧場", radius: 5000)
+        deliveryOverlayJuyan(pastureName: "久源牧場", radius: 5000)
+        deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
+        
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.delegate = self
         manager.requestWhenInUseAuthorization()
@@ -314,6 +320,32 @@ import Charts
             let center = CLLocationCoordinate2D(latitude: 23.692046147786932, longitude: 120.53154473204215)
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
+        }
+        func deliveryOverlayGreenIn(pastureName:String, radius:CLLocationDistance){
+            let center = CLLocationCoordinate2D(latitude: 23.356254, longitude: 120.528730)
+            let circle = MKCircle(center: center, radius: radius)
+            myMapView.addOverlay(circle)
+        }
+        func Yunhu(pastureName:String, radius:CLLocationDistance){
+            let center = CLLocationCoordinate2D(latitude: 23.808921,  longitude: 120.397142)
+            let circle = MKCircle(center: center, radius: radius)
+            myMapView.addOverlay(circle)
+        }
+        func deliveryOverlayJuyan(pastureName:String, radius:CLLocationDistance){
+            let center = CLLocationCoordinate2D(latitude: 23.754179,  longitude: 120.238075)
+            let circle = MKCircle(center: center, radius: radius)
+            myMapView.addOverlay(circle)
+        }
+        
+        func deliveryOverlayHuya(pastureName:String, radius:CLLocationDistance){
+            let center = CLLocationCoordinate2D(latitude: 23.870594, longitude: 120.413424)
+            let circle = MKCircle(center: center, radius: radius)
+            myMapView.addOverlay(circle)
+        }
+        func deliveryOverlayResua(pastureName:String, radius:CLLocationDistance){
+            let center1 = CLLocationCoordinate2D(latitude: 23.5, longitude: 121.4)
+            let circle1 = MKCircle(center: center1, radius: radius)
+            myMapView.addOverlay(circle1)
         }
         func deliveryOverlayFly(pastureName:String, radius:CLLocationDistance){
             let center2 = CLLocationCoordinate2D(latitude: 24.478058, longitude: 120.724436)
@@ -684,7 +716,7 @@ import Charts
                     dataEntries.append(entry)
                 }
                 //这50条数据作为1根折线里的所有数据
-        let chartDataSet = LineChartDataSet(entries: dataEntries, label: "图例1")
+        let chartDataSet = LineChartDataSet(entries: dataEntries, label: "折線圖")
                 //目前折线图只包括1根折线
                 let chartData = LineChartData(dataSets: [chartDataSet])
          
@@ -694,6 +726,11 @@ import Charts
         deliveryOverlay(pastureName: "Connie's Pizza",radius: 5000)
         deliveryOverlayFly(pastureName: "飛牛牧場",radius: 5000)
         deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
+        deliveryOverlayResua(pastureName: "瑞穗牧場", radius: 5000)
+        deliveryOverlayHuya(pastureName: "禾野牧場", radius: 5000)
+        deliveryOverlayYunhu(pastureName: "楊和牧場", radius: 5000)
+        deliveryOverlayJuyan(pastureName: "久源牧場", radius: 5000)
+        deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
         getDirection()
         //設定座標
         let flycow = CLLocationCoordinate2D(latitude:24.441304,longitude: 120.74123)
@@ -752,6 +789,11 @@ import Charts
         let span = MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
         let region = MKCoordinateRegion(center: coordinate, span: span)
         myMapView.setRegion(region, animated: true)
+    }
+    func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        let backItem = UIBarButtonItem()
+        backItem.title = "Something Else"
+        navigationItem.backBarButtonItem = backItem // This will show in the next view controller being pushed
     }
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         if motion == .motionShake {
@@ -1390,9 +1432,7 @@ import Charts
     }
     
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
-    
         print("點擊大頭針的說明")
-        let route = currentRoute?.distance
     }
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -2130,12 +2170,9 @@ final class ClusterAnnotationView: MKAnnotationView {
 extension UIGraphicsImageRenderer {
     static func image(for annotations: [MKAnnotation], in rect: CGRect) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: rect.size)
-        
         let totalCount = annotations.count
         let orangeCount = annotations.count
-        
         let countText = "\(totalCount)"
-        
         return renderer.image { _ in
             UIColor(red: 126 / 255.0, green: 211 / 255.0, blue: 33 / 255.0, alpha: 1.0).setFill()
             UIBezierPath(ovalIn: rect).fill()
