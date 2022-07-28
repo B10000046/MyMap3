@@ -9,8 +9,6 @@ class LoginPage2: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var resultLbl: UILabel!
     @IBOutlet weak var sendBtn: UIButton!
     @IBOutlet weak var countingLbl: UILabel!
- 
-    
     var checkMsg:[String] = []
 
     override func viewDidLoad() {
