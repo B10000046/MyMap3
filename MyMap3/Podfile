@@ -1,0 +1,13 @@
+use_frameworks!
+
+target 'MyMap3' do
+  pod 'CoreGPX', :path => '../'
+
+  target 'MyMap3_Tests' do
+    inherit! :search_paths
+ pod 'GoogleMaps', '7.0.0'
+ pod 'GooglePlaces'
+ pod 'Firebase/Auth'
+pod 'Firebase/Core'
+pod 'GoogleSignIn'
+end
