@@ -195,25 +195,3 @@ extension UIColor{
     }
 
 }
-class infoConfirmVC: UIViewController {
-    
-   
-    @IBOutlet weak var usernameLbl: UILabel!
-    @IBOutlet weak var passwordLbl: UILabel!
-    
-    var confirmUsername = ""
-    var confirmPassword = ""
-    
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        usernameLbl.text = confirmUsername
-        passwordLbl.text = confirmPassword
-        
-
-    }
-    
-
-
-}
