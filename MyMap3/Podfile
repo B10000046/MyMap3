@@ -8,6 +8,6 @@ target 'MyMap3' do
  pod 'GoogleMaps', '7.0.0'
  pod 'GooglePlaces'
  pod 'Firebase/Auth'
-pod 'Firebase/Core'
-pod 'GoogleSignIn'
+ pod 'Firebase/Core'
+ pod 'GoogleSignIn'
 end
