@@ -17,11 +17,7 @@ class LoginPage2: UIViewController, UITextFieldDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        
         mAuth = Auth.auth()
-        
-        
         Auth.auth().createUser(withEmail: "peter@neverland.com", password: "123456") { result, error in
                     
              guard let user = result?.user,
@@ -44,9 +40,6 @@ class LoginPage2: UIViewController, UITextFieldDelegate {
         } else {
             print("not login")
         }
-        
-        
-                
     }
  
     @objc func countPassword(_ sender: UITextField) {
@@ -235,11 +228,6 @@ class infoConfirmVC: UIViewController {
 
         usernameLbl.text = confirmUsername
         passwordLbl.text = confirmPassword
-        
-
     }
-    
-
-
 }
 
