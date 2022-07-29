@@ -2,7 +2,7 @@ import UIKit
 import FirebaseAuth
 import Firebase
 import FirebaseCore
-class LoginPage: UIViewController, UITextFieldDelegate {
+class LoginPage2: UIViewController, UITextFieldDelegate {
 
     var mAuth:Auth!
     @IBOutlet weak var account: UITextField!
