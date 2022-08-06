@@ -1,8 +1,25 @@
 import UIKit
 import FirebaseAuth
 import Firebase
+import GoogleSignIn
 import FirebaseCore
-class LoginPage2: UIViewController, UITextFieldDelegate {
+class LoginPage2: UIViewController, UITextFieldDelegate, GIDSignInDelegate  {
+    func sign(_ signIn: GIDSignIn!, didSignInFor user: GIDGoogleUser!, withError error: Error!) {
+        guard error == nil else{
+            print(error ?? "error")
+            return
+        }
+        account.text = user.profile.email!
+        
+        
+        
+    }
+    // 這個是拿來儲存一個flag，告訴APP我已經成功登入過了。
+    fileprivate func setUserDefaultForLogin() {
+        UserDefaults.standard.set(true, forKey: "IsLoginWithGoogle")
+        UserDefaults.standard.synchronize()
+    }
+    
 
     var mAuth:Auth!
     @IBOutlet weak var account: UITextField!
@@ -11,13 +28,37 @@ class LoginPage2: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var sendBtn: UIButton!
     @IBOutlet weak var countingLbl: UILabel!
     @IBOutlet weak var loginStatus:UILabel!
+    @IBAction func createAccount(_ sender: Any) {
+        let account = account.text ?? ""
+        let password = password.text ?? ""
+        
+        if account == "" {toast(message: "請輸入帳號");return}
+        if password == "" {toast(message: "請輸入密碼");return}
+        
+        Auth.auth().createUser(withEmail: "xiemengy7@gemail.yuntech.edu.tw", password: password, completion: { (result, error) -> Void in
+               if (error == nil) {
+
+                       print("Account created :)")
+                      self.dismiss(animated: true, completion: nil)
+               }
+
+               else{
+                       print(error)
+               }
+           })
+    }
+    
     
     
     var checkMsg:[String] = []
-
+    @IBOutlet weak var mainLabel: UILabel!
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        
         mAuth = Auth.auth()
+        
+        GIDSignIn.sharedInstance().delegate = self
         Auth.auth().createUser(withEmail: "peter@neverland.com", password: "123456") { result, error in
                     
              guard let user = result?.user,
@@ -34,12 +75,25 @@ class LoginPage2: UIViewController, UITextFieldDelegate {
              }
             
         }
+        
+        
         if let user = Auth.auth().currentUser {
             print("\(user.uid) login")
             print("success")
+            self.toast(message: "登入成功")
+            if let url = URL(string: "https://www.sencha.com/grid/demo/modern/#/rendering-and-scrolling/live-data-grid") {
+                    if UIApplication.shared.canOpenURL(url) {
+                        if #available(iOS 10.0, *) {
+                            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                        } else {
+                            UIApplication.shared.openURL(url)
+                        }
+                    }
+                }
         } else {
             print("not login")
         }
+                
     }
  
     @objc func countPassword(_ sender: UITextField) {
@@ -153,14 +207,42 @@ class LoginPage2: UIViewController, UITextFieldDelegate {
     
     @IBAction func closeKeyboard(_ sender: Any) {
     }
+    @IBAction func forgetPassword(_ sender:Any){
+        let accountString = account.text ?? ""
+        if accountString != "" {
+            mAuth.sendPasswordReset(withEmail: accountString){ (error) in
+                if accountString != "" {
+                    self.toast(message: "重設密碼郵件已送出，請檢查您的電子郵件")
+                }else{
+                    self.toast(message: "無法重設，說明：\(error!.localizedDescription)")
+                }
+            }
+                               }else{
+                                   self.toast(message: "請輸入帳號")
+                    }
+    }
+    @IBAction func logingIn(_sender:Any){
+        let accountString = account.text ?? ""
+        let passwordString = password.text ?? ""
+        if accountString != "" && passwordString != "" {
+            mAuth.signIn(withEmail:accountString,password:passwordString){ (user,error) in
+                if error != nil{
+                    self.toast(message: "錯誤 \(error!.localizedDescription)")
+                    
+                }else{
+                    self.toast(message:"請輸入帳號密碼")
+                }
+                }
+        
+        }
+        
+        
+    }
     
-    
-    @IBSegueAction func nextPage(_ coder: NSCoder) -> infoConfirmVC? {
-        let infoConfirmViewController = infoConfirmVC(coder: coder)
-        let usernameTxt = account.text ?? ""
+    @IBSegueAction func nextPage(_ coder: NSCoder) -> ViewController? {
+        let infoConfirmViewController = ViewController(coder: coder)
+        let username = account.text ?? ""
         let password = password.text ?? ""
-        infoConfirmViewController?.confirmUsername = usernameTxt
-        infoConfirmViewController?.confirmPassword = password
         return infoConfirmViewController
     }
     
@@ -213,6 +295,16 @@ extension UIColor{
     }
 
 }
+extension UIViewController{
+    func toast(message:String){
+        let alert = UIAlertController.init(title:message,message:nil,preferredStyle: .actionSheet)
+        present(alert,animated:true){
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1.5, execute: {
+                alert.dismiss(animated: true, completion: nil)
+            })
+        }
+    }
+}
 class infoConfirmVC: UIViewController {
     
    
@@ -228,6 +320,10 @@ class infoConfirmVC: UIViewController {
 
         usernameLbl.text = confirmUsername
         passwordLbl.text = confirmPassword
-    }
-}
+        
 
+    }
+    
+
+
+}
