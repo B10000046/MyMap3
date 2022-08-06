@@ -13,7 +13,9 @@ import CoreData
 import iAd
 import LocalAuthentication
 import Charts
-@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate{
+import GoogleMaps
+
+@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, GMSMapViewDelegate{
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
     @IBOutlet weak var locationLabel: UILabel!
@@ -66,6 +68,8 @@ import Charts
     var placemarkLatitude = 23.15
     private var previousLocation:[MKPointAnnotation] = []
     private var newLocation:[MKPointAnnotation] = []
+    
+    var addMarkerRepeat = [Int](repeating: 20, count:2)
     var seconds=0.0
     var distance=0.0
     var _locationManager=CLLocationManager()
@@ -148,7 +152,6 @@ import Charts
         let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         let region = MKCoordinateRegion(center: centerCoordinate, span: span)
         myMapView.setRegion(region, animated: false)
-        
         for randCoordinate in makeRandomCoordinates(in: region) {
             let annotation = MapItem(coordinate: randCoordinate)
             myMapView.addAnnotation(annotation)
@@ -178,9 +181,9 @@ import Charts
         deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
         deliveryOverlayResua(pastureName: "瑞穗牧場", radius: 5000)
         deliveryOverlayHuya(pastureName: "禾野牧場", radius: 5000)
-        deliveryOverlayYunhu(pastureName: "楊和牧場", radius: 5000)
         deliveryOverlayJuyan(pastureName: "久源牧場", radius: 5000)
         deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
+        deliveryOverlayWuFon(pastureName: "五峰牧場", radius: 5000)
         
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.delegate = self
@@ -267,11 +270,11 @@ import Charts
                 }
             }.resume()
         }
-        let text = "你好,雲端農業送貨系統"
+   activateProximitySensor()
+   let text = "你好,雲端農業送貨系統"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
             let utterance = AVSpeechUtterance(string: text)
             utterance.voice = AVSpeechSynthesisVoice(language: language) //use the detected language
-
             let synth = AVSpeechSynthesizer()
             synth.speak(utterance)
         } else {
@@ -331,6 +334,11 @@ import Charts
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
         }
+        func deliveryOverlayWuFon(pastureName:String, radius:CLLocationDistance){
+            let center = CLLocationCoordinate2D(latitude: 23.775291,  longitude: 121.003418)
+            let circle = MKCircle(center: center, radius: radius)
+            myMapView.addOverlay(circle)
+        }
         func deliveryOverlayJuyan(pastureName:String, radius:CLLocationDistance){
             let center = CLLocationCoordinate2D(latitude: 23.754179,  longitude: 120.238075)
             let circle = MKCircle(center: center, radius: radius)
@@ -342,6 +350,14 @@ import Charts
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
         }
+        func mapView(_ mapView: GMSMapView, idleAt position: GMSCameraPosition) {
+            UIView.animate(withDuration: 5.0, animations: { () -> Void in
+                  
+            }, completion: {(finished) in
+              // Stop tracking view changes to allow CPU to idle.
+            
+            })
+          }
         func deliveryOverlayResua(pastureName:String, radius:CLLocationDistance){
             let center1 = CLLocationCoordinate2D(latitude: 23.5, longitude: 121.4)
             let circle1 = MKCircle(center: center1, radius: radius)
@@ -451,6 +467,21 @@ import Charts
                 return nil
             }
         }
+        let request2 = MKLocalSearch.Request()
+        request2.naturalLanguageQuery = "牧場"
+        request2.region = myMapView.region
+        let search = MKLocalSearch(request:request2)
+        search.start{(response,error) in
+            guard error == nil else{
+                return
+            }
+            guard response != nil else{
+                return
+            }
+            for item in (response?.mapItems)!{
+                self.myMapView.addAnnotation(item.placemark)
+            }
+        }
         let urlString2 = URL(string: "https://reqres.in/api/users/3")  // Making the URL
         if let url = urlString2 {
            let task = URLSession.shared.dataTask(with: url) {
@@ -477,10 +508,10 @@ import Charts
         myLocationManager.startUpdatingLocation()
         myLocationManager.startUpdatingHeading()
         let fullSize = UIScreen.main.bounds.size
-        myMapView = MKMapView(frame: CGRect(x: 0, y: 20, width: fullSize.width, height: fullSize.height - 20))
+        myMapView = MKMapView(frame: CGRect(x: 0, y: 20, width: fullSize.width, height: fullSize.height - 20))//
         myMapView.showsUserLocation = true
         myMapView.delegate = self
-        myMapView.mapType = .standard
+        myMapView.mapType = .hybridFlyover
         myMapView.isPitchEnabled = true
         myMapView.userTrackingMode = .follow//效果:不带方向的追踪,显示用户的位置,并且会跟随用户移动
         myMapView.showsUserLocation = true
@@ -510,19 +541,19 @@ import Charts
         let latDelta = 0.05
         let longDelta = 0.05
         let currentLocationSpan:MKCoordinateSpan = MKCoordinateSpan.init(latitudeDelta: latDelta, longitudeDelta: longDelta)
-        let sourceLocation = CLLocationCoordinate2D(latitude: 25.033493, longitude: 121.564101)
-        let destinationLocation = CLLocationCoordinate2D(latitude: 22.817701, longitude: 120.2858)
+        let sourceLocation = CLLocationCoordinate2D(latitude: 23.15, longitude: 120.53)
+        let destinationLocation = CLLocationCoordinate2D(latitude: 24.441304, longitude: 120.528730)
         let sourcePlacemark = MKPlacemark(coordinate: sourceLocation, addressDictionary: nil)
         let destinationPlacemark = MKPlacemark(coordinate: destinationLocation, addressDictionary: nil)
         let sourceMapItem = MKMapItem(placemark: sourcePlacemark)
         let destinationMapItem = MKMapItem(placemark: destinationPlacemark)
         let sourceAnnotation = MKPointAnnotation()
-            sourceAnnotation.title = "台北101"
+            sourceAnnotation.title = "河野牧場"
         if let location = sourcePlacemark.location {
                   sourceAnnotation.coordinate = location.coordinate
         }
         let destinationAnnotation = MKPointAnnotation()
-              destinationAnnotation.title = "高雄市岡山區"
+              destinationAnnotation.title = "綠盈農場"
               
         if let location = destinationPlacemark.location {
               destinationAnnotation.coordinate = location.coordinate
@@ -633,23 +664,10 @@ import Charts
         myMapView.showsScale = true
         myMapView.showsTraffic = true
         myMapView.showsUserLocation = true
-        myMapView.mapType = MKMapType(rawValue: 0)!
+        myMapView.mapType = .hybridFlyover
         myMapView.userTrackingMode = MKUserTrackingMode(rawValue: 2)!
-        let request2 = MKLocalSearch.Request()
-        request2.naturalLanguageQuery = "牧場"
-        request2.region = myMapView.region
-        let search = MKLocalSearch(request:request2)
-        search.start{(response,error) in
-            guard error == nil else{
-                return
-            }
-            guard response != nil else{
-                return
-            }
-            for item in (response?.mapItems)!{
-                self.myMapView.addAnnotation(item.placemark)
-            }
-        }
+        
+        
         myMapView.userTrackingMode = MKUserTrackingMode.followWithHeading
         _ = locationManager
         let item = MKUserTrackingBarButtonItem(mapView: myMapView)
@@ -728,9 +746,9 @@ import Charts
         deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
         deliveryOverlayResua(pastureName: "瑞穗牧場", radius: 5000)
         deliveryOverlayHuya(pastureName: "禾野牧場", radius: 5000)
-        deliveryOverlayYunhu(pastureName: "楊和牧場", radius: 5000)
         deliveryOverlayJuyan(pastureName: "久源牧場", radius: 5000)
         deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
+        deliveryOverlayWuFon(pastureName: "五峰牧場", radius: 5000)
         getDirection()
         //設定座標
         let flycow = CLLocationCoordinate2D(latitude:24.441304,longitude: 120.74123)
@@ -782,7 +800,6 @@ import Charts
            }
             task.resume()
         }
-        let path = Bundle.main.path(forResource: "index", ofType: ".html")
     }
     func render(_ location: CLLocation){
         let coordinate = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
@@ -809,6 +826,22 @@ import Charts
             synth.speak(myUtterance)
         }
     }
+    func activateProximitySensor() {
+        let device = UIDevice.current
+        device.isProximityMonitoringEnabled = true
+        if device.isProximityMonitoringEnabled {
+            NotificationCenter.default.addObserver(self, selector: #selector(proximityChanged(notification:)), name: NSNotification.Name(rawValue: "UIDeviceProximityStateDidChangeNotification"), object: device)
+        }
+    }
+   
+    func proximityChanged(notification: NSNotification) {
+        var i=0
+        if let device = notification.object as? UIDevice {
+            print("\(device) detected!")
+            self.view.showToast(text: "接近裝置")
+            i+=1
+        }
+        }
     @objc func thread1ToDo(sender:AnyObject?){
         for i in 1...100{
             print("I'm thread1-- \(i)")
@@ -818,13 +851,9 @@ import Charts
                 // loop body
              nSize = (nSize + 1) / 2
              DispatchQueue.main.async { [self] in
-                  
                  for index in 1...nSize {
                      print("\(index) 偵測搖晃：\(index * 5)")
-                     myMapView.addAnnotation(newPin)
                  }
-                 myMapView.addAnnotation(newPin)
-                 print("add an annotation.")
             }}
         }
     }
@@ -977,15 +1006,12 @@ import Charts
                      print("\(index) 偵測搖晃：\(index * 5)")
                      myMapView.addAnnotation(newPin)
                 }
-                 myMapView.addAnnotation(newPin)
-                 print("add an annotation.")
             }}
       }}
       @objc func proximityStateChanged(_ sender:NSNotification){
         let device = UIDevice.current
         if device.proximityState{
             print("物體接近")
-     
         }else{
             print("物體遠離")
         }
@@ -1003,9 +1029,7 @@ import Charts
     func getJSONData(completed: @escaping () -> ()) {
         if let filepath = Bundle.main.path(forResource: "weather", ofType: "json") {
             if let data = try? String(contentsOf: URL(fileURLWithPath: filepath)) {
-              
-
-                // I must assign json to weatherData here
+              // I must assign json to weatherData here
                 DispatchQueue.main.async {
                     completed()
                 }
@@ -1222,7 +1246,7 @@ import Charts
        if overlay.isKind(of: MKCircle.self){
               let circleRenderer = MKCircleRenderer(overlay: overlay)
          
-              circleRenderer.strokeColor = UIColor.blue
+//           circleRenderer.strokeColor = UIColor.yellow
               circleRenderer.lineWidth = 1
               return circleRenderer
           }
@@ -1475,7 +1499,6 @@ import Charts
                     }
                     myMapView.addAnnotation(newPin)
                     print("add an annotation.")
-                    updateViews()
                   }
             }
             DispatchQueue.global().asyncAfter(deadline: .now() + .seconds(2)) {
@@ -1484,11 +1507,8 @@ import Charts
                     print("add an annotation2.")
                 }
             }
-            
         }
-        func updateViews() {
-          let dataForViews = myDataQueue.sync { return dataArray }
-        }
+
         var sp = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.documentationDirectory, FileManager.SearchPathDomainMask.allDomainsMask, true)
         //迴圈出力取得路徑
                 for file in sp {
@@ -1565,10 +1585,8 @@ import Charts
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
 
             //we now know the language of the text
-
             let utterance = AVSpeechUtterance(string: text)
             utterance.voice = AVSpeechSynthesisVoice(language: language) //use the detected language
-
             let synth = AVSpeechSynthesizer()
             synth.speak(utterance)
         } else {
@@ -1582,12 +1600,10 @@ import Charts
     }
     let kmlFileName = "Allowed area"
     let kmlFileType="kml"
-    
     var polygonView:MKPolygonRenderer!
     var polygonCoordinatePoints:[CLLocationCoordinate2D] = []
     var shopName:[String] = []
     var shopCity:[String] = []
-  
     func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
       print("取消點擊大頭針")
     }
@@ -1689,7 +1705,7 @@ import Charts
             if overlay.isKind(of: MKCircle.self){
                 let circleRenderer = MKCircleRenderer(overlay: overlay)
                 circleRenderer.fillColor = UIColor.blue.withAlphaComponent(0.1)
-                circleRenderer.strokeColor = UIColor.blue
+                circleRenderer.strokeColor = UIColor.yellow
                 circleRenderer.lineWidth = 1
                 return circleRenderer
             }
@@ -1728,8 +1744,6 @@ import Charts
         }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // 印出目前所在位置座標
-        myMapView.removeAnnotation(newPin)
-
            let location = locations.last! as CLLocation
 
            let center = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
@@ -1739,8 +1753,12 @@ import Charts
            myMapView.setRegion(region, animated: true)
 
            newPin.coordinate = location.coordinate
+        for item in addMarkerRepeat{
            myMapView.addAnnotation(newPin)
+            print(item)
         }
+        
+    }
         func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
@@ -2029,7 +2047,6 @@ struct User2: Codable {
     try container.encode(userName, forKey: . userName)
     try container.encode(age, forKey: . age)
   }
-
  // Generated automatically by the compiler if not specified
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
