@@ -1,0 +1,14 @@
+use_frameworks!
+platform :ios, '10.9'
+use_frameworks!
+
+target 'MyMap3' do
+  pod 'AEXML'
+  pod 'GoogleMaps', '2.0.0'
+  pod 'Firebase/Auth'
+  pod 'Firebase/Core'
+  pod 'GoogleSignIn', '~> 4.4.0'
+  pod 'Firebase/Database'
+  pod 'Firebase/Firestore'
+end
+
