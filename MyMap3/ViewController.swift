@@ -14,8 +14,8 @@ import iAd
 import LocalAuthentication
 import Charts
 import GoogleMaps
-
-@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, GMSMapViewDelegate{
+@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, GMSMapViewDelegate, UNUserNotificationCenterDelegate{
+  
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
     @IBOutlet weak var locationLabel: UILabel!
@@ -68,7 +68,7 @@ import GoogleMaps
     var placemarkLatitude = 23.15
     private var previousLocation:[MKPointAnnotation] = []
     private var newLocation:[MKPointAnnotation] = []
-    
+     
     var addMarkerRepeat = [Int](repeating: 20, count:2)
     var seconds=0.0
     var distance=0.0
@@ -79,6 +79,7 @@ import GoogleMaps
     private static var kivaLoanURL1 = "https://api.kivaws.org/v1/loans/newest.json"
     let decoder = JSONDecoder()
     let request:MKDirections.Request = MKDirections.Request()
+    
     //BLE
     var centralManager:CBCentralManager!
     var sensorTagPeripheral:CBCentralManager!
@@ -100,26 +101,22 @@ import GoogleMaps
                 fatalError("Error getting file URL from document directory.")
             }
         }()
-       @IBOutlet weak var txtPassword: UITextField!
-       @IBOutlet weak var txtUserName: UITextField!
-       //MARK: Login Action
-       @IBOutlet weak var segmentedControl: UISegmentedControl!
-       var objects = NSMutableArray()
     @IBAction func myLocation(_ sender:UIButton){
         let location = myMapView.userLocation
         let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 300, longitudinalMeters: 300)
         myMapView.setRegion(region, animated: true)
     }
+
     var location : CLLocationManager!; //座標管理元件
     var status = CLLocationManager.authorizationStatus()
     var backFacingCamera:AVCaptureDevice?
     var frontFacingCamera:AVCaptureDevice?
     var currentDevice:AVCaptureDevice?
-    @IBOutlet weak var username_input: UITextField!
-    @IBOutlet weak var password_input: UITextField!
-    @IBOutlet weak var login_button: UIButton!
+
+    let channels = ["awesomeChannel"]
+    
     @IBOutlet weak var weatherLabel: UILabel!
-    @IBOutlet weak var routeMap: MKMapView!
+  //  @IBOutlet weak var routeMap: MKMapView!
     let manager = CLLocationManager()
     var completion:((CLLocation)->Void)?
     public func getUserLocation(completion:@escaping ((CLLocation)-> Void)){
@@ -139,6 +136,14 @@ import GoogleMaps
         let synthesizer = AVSpeechSynthesizer()
         synthesizer.delegate = self
         navigationItem.title = "牧場地圖"
+        deliveryOverlay(pastureName:"Connie's Pizza",radius: 5000)
+        deliveryOverlayFly(pastureName: "飛牛牧場", radius: 5000)
+        deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
+        deliveryOverlayResua(pastureName: "瑞穗牧場", radius: 5000)
+        deliveryOverlayHuya(pastureName: "禾野牧場", radius: 5000)
+        deliveryOverlayJuyan(pastureName: "久源牧場", radius: 5000)
+        deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
+        deliveryOverlayWuFon(pastureName: "五峰牧場", radius: 5000)
         if device.isProximityMonitoringEnabled{
             let nc = NotificationCenter.default
             nc.addObserver(self,
@@ -173,18 +178,10 @@ import GoogleMaps
                 }
             sqlite3_finalize(statement)
             }
+      
         createTable()
         queryOneData()
         zoomToRegion()
-        deliveryOverlay(pastureName:"Connie's Pizza",radius: 5000)
-        deliveryOverlayFly(pastureName: "飛牛牧場", radius: 5000)
-        deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
-        deliveryOverlayResua(pastureName: "瑞穗牧場", radius: 5000)
-        deliveryOverlayHuya(pastureName: "禾野牧場", radius: 5000)
-        deliveryOverlayJuyan(pastureName: "久源牧場", radius: 5000)
-        deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
-        deliveryOverlayWuFon(pastureName: "五峰牧場", radius: 5000)
-        
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.delegate = self
         manager.requestWhenInUseAuthorization()
@@ -242,8 +239,6 @@ import GoogleMaps
             myMapView.register(
                 ClusterAnnotationView.self,
                 forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
-
-            
             open(scheme: "omgooglemaps://?saddr=Google+Inc,+8th+Avenue,+New+York,+NY&daddr=John+F.+Kennedy+International+Airport,+Van+Wyck+Expressway,+Jamaica,+New+York&directionsmode=transit")
         } else {
           NSLog("Can't use comgooglemaps-x-callback:// on this device.")
@@ -271,6 +266,12 @@ import GoogleMaps
             }.resume()
         }
    activateProximitySensor()
+   
+   
+        
+   
+        
+
    let text = "你好,雲端農業送貨系統"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
             let utterance = AVSpeechUtterance(string: text)
@@ -325,7 +326,7 @@ import GoogleMaps
             myMapView.addOverlay(circle)
         }
         func deliveryOverlayGreenIn(pastureName:String, radius:CLLocationDistance){
-            let center = CLLocationCoordinate2D(latitude: 23.356254, longitude: 120.528730)
+            let center = CLLocationCoordinate2D(latitude: 23.25, longitude: 120.31)
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
         }
@@ -358,6 +359,16 @@ import GoogleMaps
             
             })
           }
+        func locationManager(manager: CLLocationManager!, didFailWithError error: NSError!) {
+                print("didFailWithError: \(error.description)")
+                let errorAlert = UIAlertView(title: "Error", message: "Failed to Get Your Location", delegate: nil, cancelButtonTitle: "Ok")
+                errorAlert.show()
+            }
+        func locationManager(manager: CLLocationManager!, didUpdateLocations locations: [AnyObject]!) {
+            let newLocation = locations.last as! CLLocation
+                print("current position: \(newLocation.coordinate.longitude) , \(newLocation.coordinate.latitude)")
+            }
+        
         func deliveryOverlayResua(pastureName:String, radius:CLLocationDistance){
             let center1 = CLLocationCoordinate2D(latitude: 23.5, longitude: 121.4)
             let circle1 = MKCircle(center: center1, radius: radius)
@@ -480,6 +491,7 @@ import GoogleMaps
             }
             for item in (response?.mapItems)!{
                 self.myMapView.addAnnotation(item.placemark)
+                
             }
         }
         let urlString2 = URL(string: "https://reqres.in/api/users/3")  // Making the URL
@@ -511,7 +523,7 @@ import GoogleMaps
         myMapView = MKMapView(frame: CGRect(x: 0, y: 20, width: fullSize.width, height: fullSize.height - 20))//
         myMapView.showsUserLocation = true
         myMapView.delegate = self
-        myMapView.mapType = .hybridFlyover
+        myMapView.mapType = .mutedStandard
         myMapView.isPitchEnabled = true
         myMapView.userTrackingMode = .follow//效果:不带方向的追踪,显示用户的位置,并且会跟随用户移动
         myMapView.showsUserLocation = true
@@ -542,13 +554,13 @@ import GoogleMaps
         let longDelta = 0.05
         let currentLocationSpan:MKCoordinateSpan = MKCoordinateSpan.init(latitudeDelta: latDelta, longitudeDelta: longDelta)
         let sourceLocation = CLLocationCoordinate2D(latitude: 23.15, longitude: 120.53)
-        let destinationLocation = CLLocationCoordinate2D(latitude: 24.441304, longitude: 120.528730)
+        let destinationLocation = CLLocationCoordinate2D(latitude:23.25 , longitude: 120.31)
         let sourcePlacemark = MKPlacemark(coordinate: sourceLocation, addressDictionary: nil)
         let destinationPlacemark = MKPlacemark(coordinate: destinationLocation, addressDictionary: nil)
         let sourceMapItem = MKMapItem(placemark: sourcePlacemark)
         let destinationMapItem = MKMapItem(placemark: destinationPlacemark)
         let sourceAnnotation = MKPointAnnotation()
-            sourceAnnotation.title = "河野牧場"
+            sourceAnnotation.title = "合野牧場"
         if let location = sourcePlacemark.location {
                   sourceAnnotation.coordinate = location.coordinate
         }
@@ -664,10 +676,8 @@ import GoogleMaps
         myMapView.showsScale = true
         myMapView.showsTraffic = true
         myMapView.showsUserLocation = true
-        myMapView.mapType = .hybridFlyover
+        myMapView.mapType = .mutedStandard
         myMapView.userTrackingMode = MKUserTrackingMode(rawValue: 2)!
-        
-        
         myMapView.userTrackingMode = MKUserTrackingMode.followWithHeading
         _ = locationManager
         let item = MKUserTrackingBarButtonItem(mapView: myMapView)
@@ -750,6 +760,8 @@ import GoogleMaps
         deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
         deliveryOverlayWuFon(pastureName: "五峰牧場", radius: 5000)
         getDirection()
+        
+       
         //設定座標
         let flycow = CLLocationCoordinate2D(latitude:24.441304,longitude: 120.74123)
         let yuansin = CLLocationCoordinate2D(latitude:24.429672,longitude:120.738737)
@@ -885,7 +897,7 @@ import GoogleMaps
 
         for route in response.routes {
 
-            routeMap.addOverlay(route.polyline,
+            myMapView.addOverlay(route.polyline,
                     level: MKOverlayLevel.aboveRoads)
             for step in route.steps {
                 print(step.instructions)
@@ -894,7 +906,7 @@ import GoogleMaps
         if let coordinate = userLocation?.coordinate{
             let region2 =
             MKCoordinateRegion(center: coordinate, latitudinalMeters: 2000, longitudinalMeters: 2000)
-            routeMap.setRegion(region2, animated: true)
+            myMapView.setRegion(region2, animated: true)
         }
     }
     private func callWeatherAPI() {
@@ -962,7 +974,7 @@ import GoogleMaps
             })
             task.resume()
     }
-
+ 
     func peripheralManager(_ peripheral: CBPeripheralManager) {
         guard peripheral.state == .poweredOn else{
             print(peripheral.state.rawValue)
@@ -1359,6 +1371,21 @@ import GoogleMaps
         annotationView?.rightCalloutAccessoryView = button
         return annotationView
     }
+    func application(
+      _ application: UIApplication,
+      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+    ) -> Bool {
+
+      UNUserNotificationCenter.current().delegate = self
+
+      UNUserNotificationCenter.current().requestAuthorization(options: [.badge, .alert, .sound]) { (granted, err) in
+        DispatchQueue.main.async() {
+          UIApplication.shared.registerForRemoteNotifications()
+        }
+      }
+
+      return true
+    }
     private func mapView(mapView: MKMapView!, viewForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
            if (overlay is MKPolyline) {
                let pr = MKPolylineRenderer(overlay: overlay)
@@ -1437,7 +1464,6 @@ import GoogleMaps
         myMapView.addAnnotation(newPin)
 
                  let location = locations.last! as CLLocation
-
                  let center = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
                  let region = MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
 
@@ -1466,6 +1492,7 @@ import GoogleMaps
         determineMyCurrentLocation()
        
     }
+    
     func determineMyCurrentLocation(){
         locationManager = CLLocationManager()
         locationManager.delegate = self
@@ -1485,7 +1512,8 @@ import GoogleMaps
         let location = locations.last! as CLLocation
         let center = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
         let region = MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
-        newPin.coordinate = location.coordinate
+        newPin.coordinate = userLocation.coordinate
+        myMapView.addAnnotation(newPin)
           //於當前位置加入標記->Thread
         myDataQueue.async(flags: .barrier) {
                 var nSize = 10000
@@ -1553,7 +1581,7 @@ import GoogleMaps
            let eventLongitude = self.placemarkLongitude // THIS RETURNS 0.0
            print("Event Location is ", eventLatitude, ", " ,eventLongitude)
            let eventLocation = CLLocation(latitude: eventLatitude, longitude: eventLongitude)
-
+        
            //Measuring my distance to my buddy's (in km)
         let distance = userLocation.distance(from: eventLocation) / 1000
 
@@ -1565,6 +1593,7 @@ import GoogleMaps
                  print("the distance is greater than 100 km")
              }
     }
+    
     //MARK:- Zoom to region
     func zoomToRegion() {
         
@@ -1579,8 +1608,11 @@ import GoogleMaps
             print("Error \(error)")
         }
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-    
+      let radius = 5000
        print("點擊大頭針")
+        let center1 = CLLocationCoordinate2D(latitude: 23.5, longitude: 121.4)
+        let circle1 = MKCircle(center: center1, radius: CLLocationDistance(radius))
+        myMapView.addOverlay(circle1)
         let text = "選擇牧場"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
 
@@ -1597,6 +1629,16 @@ import GoogleMaps
         let zoomCoordinate = view.annotation?.coordinate ?? myMapView.region.center
         let zoomed = MKCoordinateRegion(center: zoomCoordinate, span: zoomSpan)
         myMapView.setRegion(zoomed, animated: true)
+        
+        if let url = URL(string: "https://www.sencha.com/grid/demo/modern/#/rendering-and-scrolling/live-data-grid") {
+                if UIApplication.shared.canOpenURL(url) {
+                    if #available(iOS 10.0, *) {
+                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                    } else {
+                        UIApplication.shared.openURL(url)
+                    }
+                }
+            }
     }
     let kmlFileName = "Allowed area"
     let kmlFileType="kml"
@@ -1607,6 +1649,7 @@ import GoogleMaps
     func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
       print("取消點擊大頭針")
     }
+   
     func getMapAnnotations() -> [Station] {
         var annotations:Array = [Station]()
         
@@ -1628,19 +1671,13 @@ import GoogleMaps
         
         return annotations
     }
-    @IBAction func showDirection(_ sender: AnyObject) {
-        var currentTransportType = MKDirectionsTransportType.automobile
-        if segmentedControl.selectedSegmentIndex == 0{
-            currentTransportType = MKDirectionsTransportType.automobile
-        }else{
-            currentTransportType = MKDirectionsTransportType.walking
-        }
-        segmentedControl.isHidden = false
-        let directionRequest = MKDirections.Request()
-    }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation],newLocation: CLLocation!, fromLocation oldLocation: CLLocation!) {
            print("定位到了")
+        let newLocation = locations.last! as CLLocation
+            print("current position: \(newLocation.coordinate.longitude) , \(newLocation.coordinate.latitude)")
+            let message = "{\"lat\":\(newLocation.coordinate.latitude),\"lng\":\(newLocation.coordinate.longitude), \"alt\": \(newLocation.altitude)}"
+    
     }
   
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
@@ -1659,6 +1696,7 @@ import GoogleMaps
             let request = UNNotificationRequest(identifier: "back", content: conten, trigger: nil)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
         }
+    
     func setupData() {
             // 1. 檢查系統是否能夠監視 region
             if CLLocationManager.isMonitoringAvailable(for: CLCircularRegion.self) {
@@ -1701,6 +1739,13 @@ import GoogleMaps
             }
             return polylineRenderer
         }
+        func locationManager(manager: CLLocationManager!, didUpdateLocations locations: [AnyObject]!) {
+            let newLocation = locations.last as! CLLocation
+            print("current position: \(newLocation.coordinate.longitude) , \(newLocation.coordinate.latitude)")
+            let message = "{\"lat\":\(newLocation.coordinate.latitude),\"lng\":\(newLocation.coordinate.longitude), \"alt\": \(newLocation.altitude)}"
+          
+        }
+        
         func mapView(mapView: MKMapView, rendererForOverlay overlay: MKOverlay) -> MKOverlayRenderer {
             if overlay.isKind(of: MKCircle.self){
                 let circleRenderer = MKCircleRenderer(overlay: overlay)
@@ -1719,6 +1764,7 @@ import GoogleMaps
                  let newCoordinates = newLocation.coordinate
                  var area = [oldCoordinates, newCoordinates]
                 let polyline = MKPolyline(coordinates: &area, count: area.count)
+                
                 myMapView.addOverlay(polyline)
              }
         }
@@ -1759,6 +1805,7 @@ import GoogleMaps
         }
         
     }
+     
         func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
@@ -1850,7 +1897,10 @@ import GoogleMaps
            }
        })
        dataTask.resume()
+        
+    
 }
+
 struct Resource<Model> {
     let url: URL
     let parse: (Data) throws -> Model
@@ -2047,6 +2097,7 @@ struct User2: Codable {
     try container.encode(userName, forKey: . userName)
     try container.encode(age, forKey: . age)
   }
+
  // Generated automatically by the compiler if not specified
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -2184,31 +2235,7 @@ final class ClusterAnnotationView: MKAnnotationView {
         }
     }
 }
-extension UIGraphicsImageRenderer {
-    static func image(for annotations: [MKAnnotation], in rect: CGRect) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: rect.size)
-        let totalCount = annotations.count
-        let orangeCount = annotations.count
-        let countText = "\(totalCount)"
-        return renderer.image { _ in
-            UIColor(red: 126 / 255.0, green: 211 / 255.0, blue: 33 / 255.0, alpha: 1.0).setFill()
-            UIBezierPath(ovalIn: rect).fill()
-            
-            UIColor(red: 245 / 255.0, green: 166 / 255.0, blue: 35 / 255.0, alpha: 1.0).setFill()
-            let piePath = UIBezierPath()
-            piePath.addArc(withCenter: CGPoint(x: 20, y: 20), radius: 20,
-                           startAngle: 0, endAngle: (CGFloat.pi * 2.0 * CGFloat(orangeCount)) / CGFloat(totalCount),
-                           clockwise: true)
-            piePath.addLine(to: CGPoint(x: 20, y: 20))
-            piePath.close()
-            piePath.fill()
-            
-            UIColor.white.setFill()
-            UIBezierPath(ovalIn: CGRect(x: 8, y: 8, width: 24, height: 24)).fill()
-            
-        }
-    }
-}
+
 extension Sequence where Element == MKAnnotation {
     var orangeCount: Int {
         return self
