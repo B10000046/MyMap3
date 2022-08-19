@@ -266,13 +266,7 @@ import GoogleMaps
             }.resume()
         }
    activateProximitySensor()
-   
-   
-        
-   
-        
-
-   let text = "你好,雲端農業送貨系統"
+        let text = "你好,雲端農業送貨系統"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
             let utterance = AVSpeechUtterance(string: text)
             utterance.voice = AVSpeechSynthesisVoice(language: language) //use the detected language
