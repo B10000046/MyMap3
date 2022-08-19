@@ -15,7 +15,6 @@ import LocalAuthentication
 import Charts
 import GoogleMaps
 @objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, GMSMapViewDelegate, UNUserNotificationCenterDelegate{
-  
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
     @IBOutlet weak var locationLabel: UILabel!
@@ -112,9 +111,7 @@ import GoogleMaps
     var backFacingCamera:AVCaptureDevice?
     var frontFacingCamera:AVCaptureDevice?
     var currentDevice:AVCaptureDevice?
-
     let channels = ["awesomeChannel"]
-    
     @IBOutlet weak var weatherLabel: UILabel!
   //  @IBOutlet weak var routeMap: MKMapView!
     let manager = CLLocationManager()
@@ -1799,8 +1796,7 @@ import GoogleMaps
         }
         
     }
-     
-        func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
+    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
                 pr.strokeColor = UIColor.red
@@ -1891,10 +1887,7 @@ import GoogleMaps
            }
        })
        dataTask.resume()
-        
-    
 }
-
 struct Resource<Model> {
     let url: URL
     let parse: (Data) throws -> Model
@@ -2229,7 +2222,6 @@ final class ClusterAnnotationView: MKAnnotationView {
         }
     }
 }
-
 extension Sequence where Element == MKAnnotation {
     var orangeCount: Int {
         return self
@@ -2247,7 +2239,6 @@ extension String {
                               y: (rect.height / 2) - (textSize.height / 2),
                               width: textSize.width,
                               height: textSize.height)
-        
         self.draw(in: textRect, withAttributes: attributes)
     }
 }
