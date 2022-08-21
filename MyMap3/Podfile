@@ -1,13 +1,14 @@
 use_frameworks!
+platform :ios, '10.9'
+use_frameworks!
 
 target 'MyMap3' do
- pod 'CoreGPX', :path => '../'
-
- target 'MyMap3_Tests' do
-   inherit! :search_paths
- pod 'GoogleMaps', '7.0.0'
- pod 'GooglePlaces'
- pod 'Firebase/Auth'
- pod 'Firebase/Core'
- pod 'GoogleSignIn'
+  pod 'AEXML'
+  pod 'Firebase/Auth'
+  pod 'Firebase/Core'
+  pod 'GoogleSignIn', '~> 4.4.0'
+  pod 'Firebase/Database'
+  pod 'Firebase/Firestore'
+  pod 'PXGoogleDirections'
 end
+
