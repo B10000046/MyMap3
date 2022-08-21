@@ -13,8 +13,10 @@ import CoreData
 import iAd
 import LocalAuthentication
 import Charts
+import PXGoogleDirections
 import GoogleMaps
-@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, GMSMapViewDelegate, UNUserNotificationCenterDelegate{
+@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, UNUserNotificationCenterDelegate{
+  
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
     @IBOutlet weak var locationLabel: UILabel!
@@ -52,6 +54,9 @@ import GoogleMaps
         
         return cell
     }
+    let directionsAPI = PXGoogleDirections(apiKey: "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5",
+        from: PXLocation.coordinateLocation(CLLocationCoordinate2DMake(37.331690, -122.030762)),
+        to: PXLocation.specificLocation("Googleplex", "Mountain View", "United States"))
     var chartView: LineChartView!
     let url = URL(string: "https://api.kivaws.org/v1/loans/newest.json")!
     var db :OpaquePointer? = nil
@@ -111,7 +116,9 @@ import GoogleMaps
     var backFacingCamera:AVCaptureDevice?
     var frontFacingCamera:AVCaptureDevice?
     var currentDevice:AVCaptureDevice?
+
     let channels = ["awesomeChannel"]
+    
     @IBOutlet weak var weatherLabel: UILabel!
   //  @IBOutlet weak var routeMap: MKMapView!
     let manager = CLLocationManager()
@@ -124,6 +131,7 @@ import GoogleMaps
     }
     override func viewDidLoad() {
         super.viewDidLoad()
+    
         var thread1:Thread?
         thread1=Thread(target: self, selector:#selector(ViewController.thread1ToDo), object: nil)
         thread1?.start()
@@ -176,6 +184,16 @@ import GoogleMaps
             sqlite3_finalize(statement)
             }
       
+        directionsAPI.calculateDirections({ response in
+         switch response {
+          case let .error(_, error):
+           // Oops, something bad happened, see the error object for more information
+           break
+          case let .success(request, routes):
+           // Do your work with the routes object array here
+           break
+         }
+        })
         createTable()
         queryOneData()
         zoomToRegion()
@@ -263,7 +281,13 @@ import GoogleMaps
             }.resume()
         }
    activateProximitySensor()
-        let text = "你好,雲端農業送貨系統"
+   
+   
+        
+   
+        
+
+   let text = "你好,雲端農業送貨系統"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
             let utterance = AVSpeechUtterance(string: text)
             utterance.voice = AVSpeechSynthesisVoice(language: language) //use the detected language
@@ -342,14 +366,6 @@ import GoogleMaps
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
         }
-        func mapView(_ mapView: GMSMapView, idleAt position: GMSCameraPosition) {
-            UIView.animate(withDuration: 5.0, animations: { () -> Void in
-                  
-            }, completion: {(finished) in
-              // Stop tracking view changes to allow CPU to idle.
-            
-            })
-          }
         func locationManager(manager: CLLocationManager!, didFailWithError error: NSError!) {
                 print("didFailWithError: \(error.description)")
                 let errorAlert = UIAlertView(title: "Error", message: "Failed to Get Your Location", delegate: nil, cancelButtonTitle: "Ok")
@@ -1796,7 +1812,8 @@ import GoogleMaps
         }
         
     }
-    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
+     
+        func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
                 pr.strokeColor = UIColor.red
@@ -1887,7 +1904,10 @@ import GoogleMaps
            }
        })
        dataTask.resume()
+        
+    
 }
+
 struct Resource<Model> {
     let url: URL
     let parse: (Data) throws -> Model
@@ -2222,6 +2242,7 @@ final class ClusterAnnotationView: MKAnnotationView {
         }
     }
 }
+
 extension Sequence where Element == MKAnnotation {
     var orangeCount: Int {
         return self
@@ -2239,6 +2260,7 @@ extension String {
                               y: (rect.height / 2) - (textSize.height / 2),
                               width: textSize.width,
                               height: textSize.height)
+        
         self.draw(in: textRect, withAttributes: attributes)
     }
 }
