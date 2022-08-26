@@ -86,9 +86,6 @@ class LoginPage2: UIViewController, UITextFieldDelegate,GIDSignInDelegate,GIDSig
                }
            })
     }
-    
-    
-    
     var checkMsg:[String] = []
     @IBOutlet weak var mainLabel: UILabel!
     override func viewDidLoad() {
@@ -448,4 +445,8 @@ class infoConfirmVC: UIViewController {
 
 }
 extension LoginPage2{
+
+
+    
 }
+
