@@ -158,6 +158,7 @@ import GoogleMaps
         }else{
             print("此裝置沒有接近感測器")
         }
+        
         let centerCoordinate = CLLocationCoordinate2D(latitude: 23.14, longitude: 120.53)
         let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         let region = MKCoordinateRegion(center: centerCoordinate, span: span)
@@ -191,6 +192,7 @@ import GoogleMaps
            break
           case let .success(request, routes):
            // Do your work with the routes object array here
+             
            break
          }
         })
@@ -281,12 +283,6 @@ import GoogleMaps
             }.resume()
         }
    activateProximitySensor()
-   
-   
-        
-   
-        
-
    let text = "你好,雲端農業送貨系統"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
             let utterance = AVSpeechUtterance(string: text)
@@ -767,8 +763,6 @@ import GoogleMaps
         deliveryOverlayGreenIn(pastureName: "綠盈牧場", radius: 5000)
         deliveryOverlayWuFon(pastureName: "五峰牧場", radius: 5000)
         getDirection()
-        
-       
         //設定座標
         let flycow = CLLocationCoordinate2D(latitude:24.441304,longitude: 120.74123)
         let yuansin = CLLocationCoordinate2D(latitude:24.429672,longitude:120.738737)
@@ -1026,6 +1020,7 @@ import GoogleMaps
                      myMapView.addAnnotation(newPin)
                 }
             }}
+            
       }}
       @objc func proximityStateChanged(_ sender:NSNotification){
         let device = UIDevice.current
@@ -1417,6 +1412,8 @@ import GoogleMaps
 
              newPin.coordinate = location.coordinate
          myMapView.addAnnotation(newPin)
+         
+         
     }
     var dataArray = [Int] ()
     func createPath(sourceLocation : CLLocationCoordinate2D, destinationLocation : CLLocationCoordinate2D,didUpdateLocations locations: [CLLocation]!) {
@@ -1510,15 +1507,24 @@ import GoogleMaps
             locationManager.startUpdatingLocation()
         }
     }
+    
+    
     //Current location 8:13
     func locationManager(_ manager:CLLocationManager,didUpdateLocations locations:[CLLocation]){
         let userLocation:CLLocation = locations[0] as CLLocation
         print("user latitude = \(userLocation.coordinate.latitude)")
         print("user longitude = \(userLocation.coordinate.longitude)")
         
+        let myLocation: CLLocation = locations[0] as CLLocation
+        let myLatitude: String = String(format: "%f", myLocation.coordinate.latitude)
+        let myLongitude: String = String(format:"%f", myLocation.coordinate.longitude)
+        self.myMapView.showToast(text: myLatitude+myLatitude)
+        
+        
         let location = locations.last! as CLLocation
         let center = CLLocationCoordinate2D(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
         let region = MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+        
         newPin.coordinate = userLocation.coordinate
         myMapView.addAnnotation(newPin)
           //於當前位置加入標記->Thread
@@ -1531,7 +1537,17 @@ import GoogleMaps
                     for index in 1...nSize {
                          print("\(index) 乘于 5 为：\(index * 5)")
                          myMapView.addAnnotation(newPin)
+                        let myLocation: CLLocation = locations[0] as CLLocation
+                        let myLatitude: String = String(format: "%f", myLocation.coordinate.latitude)
+                        let myLongitude: String = String(format:"%f", myLocation.coordinate.longitude)
+                        Timer.scheduledTimer(withTimeInterval: TimeInterval(1), repeats: true,block: {(timer:Timer)-> Void in
+                            self.view.showToast(text: myLatitude+myLongitude)
+
+                        })
+                        
+                    //    self.view.showToast(text: myLongitude)
                     }
+                     
                     myMapView.addAnnotation(newPin)
                     print("add an annotation.")
                   }
@@ -1539,6 +1555,13 @@ import GoogleMaps
             DispatchQueue.global().asyncAfter(deadline: .now() + .seconds(2)) {
                 DispatchQueue.main.async { [self] in
                     self.myMapView.addAnnotation(newPin)
+                    
+                    Timer.scheduledTimer(withTimeInterval: TimeInterval(1), repeats: true,block: {(timer:Timer)-> Void in
+                        self.view.showToast(text: myLatitude+myLongitude)
+
+                    })
+                                        
+                    
                     print("add an annotation2.")
                 }
             }
@@ -1589,6 +1612,7 @@ import GoogleMaps
            print("Event Location is ", eventLatitude, ", " ,eventLongitude)
            let eventLocation = CLLocation(latitude: eventLatitude, longitude: eventLongitude)
         
+            
            //Measuring my distance to my buddy's (in km)
         let distance = userLocation.distance(from: eventLocation) / 1000
 
@@ -1668,9 +1692,9 @@ import GoogleMaps
         }
         if let items = stations {
             for item in items {
-                let lat = (item as AnyObject).value(forKey: "lat") as! Double
-                let long = (item as AnyObject).value(forKey: "long")as! Double
-                let annotation = Station(latitude: lat, longitude: long)
+                let lat = (item as AnyObject).value(forKey: "lat") as! NSNumber
+                let long = (item as AnyObject).value(forKey: "long")as! NSNumber
+                let annotation = Station(latitude: Double(lat), longitude: Double(long))
                 annotation.title = (item as AnyObject).value(forKey: "title") as? String
                 annotations.append(annotation)
             }
@@ -1750,6 +1774,7 @@ import GoogleMaps
             let newLocation = locations.last as! CLLocation
             print("current position: \(newLocation.coordinate.longitude) , \(newLocation.coordinate.latitude)")
             let message = "{\"lat\":\(newLocation.coordinate.latitude),\"lng\":\(newLocation.coordinate.longitude), \"alt\": \(newLocation.altitude)}"
+            
           
         }
         
@@ -2264,3 +2289,23 @@ extension String {
         self.draw(in: textRect, withAttributes: attributes)
     }
 }
+extension UIViewController {
+
+    func showToast(message : String, font: UIFont,latlng:String) {
+
+    let toastLabel = UILabel(frame: CGRect(x: self.view.frame.size.width/2 - 75, y: self.view.frame.size.height-100, width: 150, height: 35))
+    toastLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+    toastLabel.textColor = UIColor.white
+    toastLabel.font = font
+    toastLabel.textAlignment = .center;
+    toastLabel.text = message
+    toastLabel.alpha = 1.0
+    toastLabel.layer.cornerRadius = 10;
+    toastLabel.clipsToBounds  =  true
+    self.view.addSubview(toastLabel)
+    UIView.animate(withDuration: 4.0, delay: 0.1, options: .curveEaseOut, animations: {
+         toastLabel.alpha = 0.0
+    }, completion: {(isCompleted) in
+        toastLabel.removeFromSuperview()
+    })
+} }
