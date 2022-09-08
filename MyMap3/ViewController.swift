@@ -16,7 +16,6 @@ import Charts
 import PXGoogleDirections
 import GoogleMaps
 @objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, UNUserNotificationCenterDelegate{
-  
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
     @IBOutlet weak var locationLabel: UILabel!
@@ -767,11 +766,9 @@ import GoogleMaps
         let flycow = CLLocationCoordinate2D(latitude:24.441304,longitude: 120.74123)
         let yuansin = CLLocationCoordinate2D(latitude:24.429672,longitude:120.738737)
         let chien = CLLocationCoordinate2D(latitude:23.45384,longitude:120.21568)
-        
         let pA = MKPlacemark(coordinate: flycow, addressDictionary: nil)
         let pB = MKPlacemark(coordinate: yuansin, addressDictionary: nil)
         let pC = MKPlacemark(coordinate: chien, addressDictionary: nil)
-        
         let miA = MKMapItem(placemark: pA)
         miA.name = "飛牛牧場"
         let miB = MKMapItem(placemark: pB)
@@ -1100,7 +1097,7 @@ import GoogleMaps
         //第四步
         sqlite3_finalize(queryStatement)
     }
-       func prepareForSeque(seque:UIStoryboardSegue,sender:AnyObject?){
+     func prepareForSeque(seque:UIStoryboardSegue,sender:AnyObject?){
           if seque.identifier == "showSteps"{
             let destinationController = seque.destination as! UINavigationController
             let routeTableViewController = destinationController.childViewControllerForPointerLock?.isFirstResponder as! ViewController
@@ -1109,7 +1106,7 @@ import GoogleMaps
             }
         }
     }
-        func setup() {
+     func setup() {
             myMapView.delegate = self
             showCircle(coordinate: initialCoordinate,
                        radius: 5000)
@@ -1159,7 +1156,7 @@ import GoogleMaps
             // 開始定位自身位置
             myLocationManager.startUpdatingLocation()
         }
-}
+    }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
@@ -1234,7 +1231,6 @@ import GoogleMaps
         myMapView.addAnnotation(appleParkAnnotation)
         myMapView.addAnnotation(ortegapartAnnotation)
     }
-    
     func showRoute2(_ response: MKDirections.Response) {
         
         for route in response.routes {
@@ -1397,8 +1393,8 @@ import GoogleMaps
            }
           
            return nil
-       }
-     func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool,didUpdateLocations locations: [CLLocation]!) {
+   }
+   func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool,didUpdateLocations locations: [CLLocation]!) {
         print("物流車移動中")
          myMapView.removeAnnotation(newPin)
 
@@ -1440,15 +1436,12 @@ import GoogleMaps
             }
             
             self.myMapView.showAnnotations([sourceAnotation, destinationAnotation], animated: true)
-            
             let directionRequest = MKDirections.Request()
             directionRequest.source = sourceMapItem
             directionRequest.destination = destinationItem
             directionRequest.transportType = .automobile
             
             let direction = MKDirections(request: directionRequest)
-            
-            
             direction.calculate { (response, error) in
                 guard let response = response else {
                     if let error = error {
@@ -1507,8 +1500,6 @@ import GoogleMaps
             locationManager.startUpdatingLocation()
         }
     }
-    
-    
     //Current location 8:13
     func locationManager(_ manager:CLLocationManager,didUpdateLocations locations:[CLLocation]){
         let userLocation:CLLocation = locations[0] as CLLocation
@@ -1566,7 +1557,6 @@ import GoogleMaps
                 }
             }
         }
-
         var sp = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.documentationDirectory, FileManager.SearchPathDomainMask.allDomainsMask, true)
         //迴圈出力取得路徑
                 for file in sp {
@@ -1680,7 +1670,6 @@ import GoogleMaps
     func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
       print("取消點擊大頭針")
     }
-   
     func getMapAnnotations() -> [Station] {
         var annotations:Array = [Station]()
         
@@ -1837,8 +1826,7 @@ import GoogleMaps
         }
         
     }
-     
-        func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
+    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
                 pr.strokeColor = UIColor.red
