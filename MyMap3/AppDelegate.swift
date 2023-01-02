@@ -1,4 +1,4 @@
-import UIKit
+iimport UIKit
 import Firebase
 import GoogleSignIn
 @main
@@ -43,7 +43,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, GIDSignInDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         FirebaseApp.configure()
-        GIDSignIn.sharedInstance()?.clientID = "332424414607-u1qa6vl72cus69j07mfrquaov04bg8t5.apps.googleusercontent.com"
+        GIDSignIn.sharedInstance()?.clientID = "581332005548-jjl5oo817a0clbaa619004059efti2ur.apps.googleusercontent.com"
                
         return true
     }
