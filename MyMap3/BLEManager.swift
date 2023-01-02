@@ -1,6 +1,12 @@
 
+//
+//  BLEManager.swift
+//  DABLETemperatureSensor
+//
+//  Created by Dejan on 11/02/2017.
+//  Copyright © 2017 Dejan. All rights reserved.
+//
 import Foundation
-
 import CoreBluetooth
 
 private struct BLEConstants {
@@ -141,16 +147,15 @@ extension BLEManager: CBPeripheralDelegate {
             peripheral.setNotifyValue(true, for: rxCharacteristic)
         }
     }
-    
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        guard let temperatureData = characteristic.value else {
-            return
+            guard let temperatureData = characteristic.value else {
+                return
+            }
+            
+            if let dataString = NSString.init(data: temperatureData, encoding: String.Encoding.utf8.rawValue) as? String {
+                self.informDelegatesDidReceiveData(manager: self, dataString: dataString)
+            }
         }
-        
-        if let dataString = NSString.init(data: temperatureData, encoding: String.Encoding.utf8.rawValue) as? String {
-            self.informDelegatesDidReceiveData(manager: self, dataString: dataString)
-        }
-    }
 }
 
 // MARK: Delegate Callbacks
