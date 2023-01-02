@@ -12,10 +12,66 @@ import Foundation
 import CoreData
 import iAd
 import LocalAuthentication
-import Charts
 import PXGoogleDirections
 import GoogleMaps
-@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, UNUserNotificationCenterDelegate{
+@objcMembers class ViewController: UIViewController, CLLocationManagerDelegate,WKUIDelegate, MKMapViewDelegate,NSURLConnectionDataDelegate,UITableViewDataSource,AVSpeechSynthesizerDelegate, UITableViewDelegate, UNUserNotificationCenterDelegate,CBCentralManagerDelegate,CBPeripheralDelegate,BLEManagerDelegate{
+    var  myCentralManager:CBCentralManager!
+        var  myPeripheral:CBPeripheral!
+        var writeCharacteristic:CBCharacteristic!
+    func bleManagerDidConnect(_ manager: BLEManagable) {
+        self.temperatureLabel.textColor = UIColor.blue
+    }
+    
+    
+    private struct Weak<T: AnyObject> {
+        weak var object: T?
+    }
+    
+    private var delegates: [Weak<AnyObject>] = []
+        fileprivate func bleDelegates() -> [BLEManagerDelegate] {
+            return delegates.flatMap { $0.object as? BLEManagerDelegate }
+        }
+    func bleManagerDidConnect(_ manager: BLEManagable,receivedDataString dataString: String) {
+        self.temperatureLabel.textColor = UIColor.blue
+        self.temperatureLabel.text = dataString + "℃"
+    }
+    
+    func bleManagerDidDisconnect(_ manager: BLEManagable) {
+        self.temperatureLabel.textColor = UIColor.red
+    }
+    
+    func bleManager(_ manager: BLEManagable, receivedDataString dataString: String) {
+        self.temperatureLabel.text = dataString + "℃"
+        temperatureLabel.font = UIFont(name:"Zapfino", size:20)
+        print("temp:"+dataString + "℃")
+     
+    }
+    func informDelegatesDidReceiveData(manager: BLEManager, dataString: String) {
+            for delegate in self.bleDelegates() {
+                DispatchQueue.main.async {
+                    delegate.bleManager(manager, receivedDataString: dataString)
+                    self.temperatureLabel.text = dataString + "℃"
+                }
+            }
+        
+        }
+    var bleManager:BLEManagable = BLEManager()
+    var titleLabel : UILabel!
+    var statusLabel : UILabel!
+    let IRTemperatureServiceUUID = CBUUID(string: "F000AA00-0451-4000-B000-000000000000")
+    let IRTemperatureDataUUID   = CBUUID(string: "F000AA01-0451-4000-B000-000000000000")
+    let IRTemperatureConfigUUID = CBUUID(string: "F000AA02-0451-4000-B000-000000000000")
+    @IBOutlet weak var temperatureLabel: UILabel!
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        bleManager.addDelegate(self)
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        bleManager.removeDelegate(self)
+    }
+
     var annotation: MKPointAnnotation?
     var locationManager: CLLocationManager!
     @IBOutlet weak var locationLabel: UILabel!
@@ -26,6 +82,7 @@ import GoogleMaps
     let chicagoCoordinate = CLLocationCoordinate2DMake(41.8832301, -87.6278121)
         let initialCoordinate = CLLocationCoordinate2DMake(41.9180474,-87.661767)
    @IBOutlet var outputTextView: UITextView!
+    
     let captureSession = AVCaptureSession()
     let myDataQueue = DispatchQueue(label: "DataQueue",
                                     qos: .userInitiated,
@@ -35,7 +92,6 @@ import GoogleMaps
     let apiKey2 = "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5"
     var restaurantNames = ["teaha","CaffeLatte","Espresso","Americano"]
     private var appDelegate = UIApplication.shared.delegate as! AppDelegate
-    
     var restaurantIsFavorites = Array(repeating: false, count: 21)
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return 1
@@ -56,7 +112,7 @@ import GoogleMaps
     let directionsAPI = PXGoogleDirections(apiKey: "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5",
         from: PXLocation.coordinateLocation(CLLocationCoordinate2DMake(37.331690, -122.030762)),
         to: PXLocation.specificLocation("Googleplex", "Mountain View", "United States"))
-    var chartView: LineChartView!
+   // var chartView: LineChartView!
     let url = URL(string: "https://api.kivaws.org/v1/loans/newest.json")!
     var db :OpaquePointer? = nil
     var statement :OpaquePointer? = nil
@@ -71,7 +127,8 @@ import GoogleMaps
     var placemarkLatitude = 23.15
     private var previousLocation:[MKPointAnnotation] = []
     private var newLocation:[MKPointAnnotation] = []
-     
+    var managerB:CBCentralManager!
+    var peripheralB:CBPeripheral!
     var addMarkerRepeat = [Int](repeating: 20, count:2)
     var seconds=0.0
     var distance=0.0
@@ -82,17 +139,34 @@ import GoogleMaps
     private static var kivaLoanURL1 = "https://api.kivaws.org/v1/loans/newest.json"
     let decoder = JSONDecoder()
     let request:MKDirections.Request = MKDirections.Request()
+    let uuidService = CBUUID(string: "25AE1441-05D3-4C5B-8281-93D4E07420CF")
+        let uuidCharForRead = CBUUID(string: "25AE1442-05D3-4C5B-8281-93D4E07420CF")
+        let uuidCharForWrite = CBUUID(string: "25AE1443-05D3-4C5B-8281-93D4E07420CF")
+        let uuidCharForIndicate = CBUUID(string: "25AE1444-05D3-4C5B-8281-93D4E07420CF")
+
+        var bleCentral: CBCentralManager!
+        var connectedPeripheral: CBPeripheral?
+    enum BLELifecycleState: String {
+           case bluetoothNotReady
+           case disconnected
+           case scanning
+           case connecting
+           case connectedDiscovering
+           case connected
+       }
     
     //BLE
     var centralManager:CBCentralManager!
     var sensorTagPeripheral:CBCentralManager!
-    var restaurant2:Restaurant!
-    var bleManager: BLEManagable?
+    var restaurant2: Restaurant!
     let lm = CLLocationManager()
     let sessionConfiguration = URLSessionConfiguration.default
     let DBFILE_NAME = "NoteList.sqlite3"
     var periperalManager:CBPeripheralManager!
     let C001_CHARACTZERISZTIC = "C001"
+    var result:String = ""
+        
+        var lable:UILabel!
     let checkInAction = UIAlertAction(title:"Check in",style:.default,handler: {
         (action:UIAlertAction!)->Void in
     })
@@ -109,18 +183,33 @@ import GoogleMaps
         let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 300, longitudinalMeters: 300)
         myMapView.setRegion(region, animated: true)
     }
-
+    private var bluefruitPeripheral: CBPeripheral!
     var location : CLLocationManager!; //座標管理元件
     var status = CLLocationManager.authorizationStatus()
     var backFacingCamera:AVCaptureDevice?
     var frontFacingCamera:AVCaptureDevice?
     var currentDevice:AVCaptureDevice?
-
-    let channels = ["awesomeChannel"]
+    var lifecycleState = BLELifecycleState.bluetoothNotReady {
+            didSet {
+                guard lifecycleState != oldValue else { return }
+                print("state = \(lifecycleState)")
+                if oldValue == .connected {
+                  
+                }
+            }
+        }
+    private var txCharacteristic: CBCharacteristic!
+    private var rxCharacteristic: CBCharacteristic!
     
+    let channels = ["awesomeChannel"]
+    let BEAN_NAME = "Robu"
+    let BEAN_SCRATCH_UUID =
+      CBUUID(string: "a495ff21-c5b1-4b44-b512-1370f02d74de")
+    let BEAN_SERVICE_UUID =
+      CBUUID(string: "a495ff20-c5b1-4b44-b512-1370f02d74de")
     @IBOutlet weak var weatherLabel: UILabel!
   //  @IBOutlet weak var routeMap: MKMapView!
-    let manager = CLLocationManager()
+    var manager = CLLocationManager()
     var completion:((CLLocation)->Void)?
     public func getUserLocation(completion:@escaping ((CLLocation)-> Void)){
         self.completion = completion
@@ -130,7 +219,6 @@ import GoogleMaps
     }
     override func viewDidLoad() {
         super.viewDidLoad()
-    
         var thread1:Thread?
         thread1=Thread(target: self, selector:#selector(ViewController.thread1ToDo), object: nil)
         thread1?.start()
@@ -157,7 +245,8 @@ import GoogleMaps
         }else{
             print("此裝置沒有接近感測器")
         }
-        
+        var txCharacteristic: CBCharacteristic!
+        var rxCharacteristic: CBCharacteristic!
         let centerCoordinate = CLLocationCoordinate2D(latitude: 23.14, longitude: 120.53)
         let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
         let region = MKCoordinateRegion(center: centerCoordinate, span: span)
@@ -183,7 +272,7 @@ import GoogleMaps
                 }
             sqlite3_finalize(statement)
             }
-      
+        centralManager = CBCentralManager(delegate: self, queue: nil)
         directionsAPI.calculateDirections({ response in
          switch response {
           case let .error(_, error):
@@ -281,7 +370,9 @@ import GoogleMaps
                 }
             }.resume()
         }
+        
    activateProximitySensor()
+        managerB = CBCentralManager(delegate: self, queue: nil)
    let text = "你好,雲端農業送貨系統"
         if let language = NSLinguisticTagger.dominantLanguage(for: text) {
             let utterance = AVSpeechUtterance(string: text)
@@ -291,6 +382,7 @@ import GoogleMaps
         } else {
             print("Unknown language")
         }
+        
         let url = URL(string: "https://reqres.in/api/users?page=1")!
         let request = URLRequest(url: url)
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -350,6 +442,7 @@ import GoogleMaps
             let circle = MKCircle(center: center, radius: radius)
             myMapView.addOverlay(circle)
         }
+        
         func deliveryOverlayJuyan(pastureName:String, radius:CLLocationDistance){
             let center = CLLocationCoordinate2D(latitude: 23.754179,  longitude: 120.238075)
             let circle = MKCircle(center: center, radius: radius)
@@ -469,6 +562,26 @@ import GoogleMaps
                     self.myMapView.addOverlay(route.polyline)
                     self.myMapView.setVisibleMapRect(route.polyline.boundingMapRect, animated: true)
                 }}}
+        func centralManagerDidUpdateState(_ central: CBCentralManager) {
+          
+           switch central.state {
+                case .poweredOff:
+                    print("Is Powered Off.")
+                case .poweredOn:
+                    print("Is Powered On.")
+                    startScanning()
+                case .unsupported:
+                    print("Is Unsupported.")
+                case .unauthorized:
+                print("Is Unauthorized.")
+                case .unknown:
+                    print("Unknown")
+                case .resetting:
+                    print("Resetting")
+                @unknown default:
+                  print("Error")
+                }
+        }
         func openDatabase() -> OpaquePointer? {
             var dbPath = "/Users/siemonyan/Desktop/GeoCoder3/GeoCoder3"
             var db: OpaquePointer?
@@ -496,6 +609,7 @@ import GoogleMaps
                 
             }
         }
+        
         let urlString2 = URL(string: "https://reqres.in/api/users/3")  // Making the URL
         if let url = urlString2 {
            let task = URLSession.shared.dataTask(with: url) {
@@ -533,6 +647,8 @@ import GoogleMaps
         myMapView.isZoomEnabled = true
         callAPI()
         callWeatherAPI()
+        
+        
         locationManager = CLLocationManager()
         locationManager.desiredAccuracy = kCLLocationAccuracyBest;
         locationManager.delegate = self;
@@ -616,7 +732,7 @@ import GoogleMaps
    directionRequest2.source = sourceMapItem2
    directionRequest2.destination = destinationMapItem2
    directionRequest2.transportType = .automobile
-
+      
    let directions2 = MKDirections(request: directionRequest2)
    directions2.calculate{
     (response2,error)-> Void in
@@ -732,27 +848,8 @@ import GoogleMaps
               print(error.code)
               print(error.description)
         }
-        //创建折线图组件对象
-                chartView = LineChartView()
-                chartView.frame = CGRect(x: 20, y: 80, width: self.view.bounds.width - 40,
-                                         height: 100)
-                self.view.addSubview(chartView)
-                 
-                //生成20条随机数据
-                var dataEntries = [ChartDataEntry]()
-                for i in 0..<20 {
-                    let y = arc4random()%100
-                    let entry = ChartDataEntry.init(x: Double(i), y: Double(y))
-                    dataEntries.append(entry)
-                }
-                //这50条数据作为1根折线里的所有数据
-        let chartDataSet = LineChartDataSet(entries: dataEntries, label: "折線圖")
-                //目前折线图只包括1根折线
-                let chartData = LineChartData(dataSets: [chartDataSet])
-         
-                //设置折现图数据
-        chartView.data = chartData
-        checkLocationService()
+        
+         checkLocationService()
         deliveryOverlay(pastureName: "Connie's Pizza",radius: 5000)
         deliveryOverlayFly(pastureName: "飛牛牧場",radius: 5000)
         deliveryOverlayChian(pastureName: "千巧谷牧場", radius: 5000)
@@ -862,7 +959,7 @@ import GoogleMaps
              nSize = (nSize + 1) / 2
              DispatchQueue.main.async { [self] in
                  for index in 1...nSize {
-                     print("\(index) 偵測搖晃：\(index * 5)")
+                    
                  }
             }}
         }
@@ -876,6 +973,7 @@ import GoogleMaps
                 myMapView.addAnnotation(anno);
             }
     }
+    
     private func mapView(mapView: MKMapView, viewForAnnotation annotation: MKAnnotation) -> MKAnnotationView? {
         if annotation is MKUserLocation{
             return nil;
@@ -1013,7 +1111,6 @@ import GoogleMaps
              nSize = (nSize + 1) / 2
              DispatchQueue.main.async { [self] in
                 for index in 1...nSize {
-                     print("\(index) 偵測搖晃：\(index * 5)")
                      myMapView.addAnnotation(newPin)
                 }
             }}
@@ -1157,12 +1254,6 @@ import GoogleMaps
             myLocationManager.startUpdatingLocation()
         }
     }
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        
-        // 停止定位自身位置
-        myLocationManager.stopUpdatingLocation()
-    }
     func parseJsonData(data:Data)->[Loan]{
         let decoder = JSONDecoder()
         
@@ -1192,10 +1283,13 @@ import GoogleMaps
         switch central.state{
         case CBManagerState.poweredOn:
             print("藍芽開啟")
+            self.temperatureLabel.textColor = UIColor.systemBlue
+            
         case CBManagerState.unauthorized:
             print("沒有藍芽功能")
         case CBManagerState.poweredOff:
             print("藍芽關閉")
+            self.temperatureLabel.textColor = UIColor.red
         default:
             print("未知狀態")
             
@@ -1475,7 +1569,7 @@ import GoogleMaps
        
     }
     func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-        mapView.centerCoordinate = userLocation.location!.coordinate
+        myMapView.centerCoordinate = userLocation.location!.coordinate
     }
     
     func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
@@ -1484,13 +1578,7 @@ import GoogleMaps
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        determineMyCurrentLocation()
-       
-    }
-    
-    func determineMyCurrentLocation(){
+     func determineMyCurrentLocation(){
         locationManager = CLLocationManager()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
@@ -1526,7 +1614,7 @@ import GoogleMaps
                  nSize = (nSize + 1) / 2
                  DispatchQueue.main.async { [self] in
                     for index in 1...nSize {
-                         print("\(index) 乘于 5 为：\(index * 5)")
+                         print("\(index)：\(index * 5)")
                          myMapView.addAnnotation(newPin)
                         let myLocation: CLLocation = locations[0] as CLLocation
                         let myLatitude: String = String(format: "%f", myLocation.coordinate.latitude)
@@ -1614,6 +1702,81 @@ import GoogleMaps
                  print("the distance is greater than 100 km")
              }
     }
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,advertisementData: [String : Any], rssi RSSI: NSNumber) {
+
+        bluefruitPeripheral = peripheral
+
+        bluefruitPeripheral.delegate = self
+
+        print("Peripheral Discovered: \(peripheral)")
+          print("Peripheral name: \(peripheral.name)")
+        print ("Advertisement Data : \(advertisementData)")
+            
+        centralManager?.stopScan()
+       }
+    
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        let value = String(data: characteristic.value!, encoding: .ascii)!
+
+           print("Wrote characteristic value: " + value + "; for characterisitc: " + characteristic.uuid.description)
+   }
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService,didWriteValueFor myCharacteristic: CBCharacteristic, error: Error?) {
+
+        // find your characteristic in service.characteristics
+        peripheral.setNotifyValue(true, for: myCharacteristic)
+    }
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+       
+        peripheral.delegate = myMapView as! CBPeripheralDelegate
+                peripheral.discoverServices(nil)
+            
+
+                //set the manager's delegate view to parent so it can call relevant disconnect methods
+        manager.delegate = myMapView as! CLLocationManagerDelegate
+      
+
+                if let navController = self.navigationController {
+                    navController.popViewController(animated: true)
+                }
+
+                print("Connected to " +  peripheral.name!)
+       bluefruitPeripheral.discoverServices([CBUUIDs.BLEService_UUID])
+    }
+ 
+
+        
+        func peripheral(_ peripheral: CBPeripheral,
+                        didUpdateNotificationStateFor characteristic: CBCharacteristic,
+                        error: Error?) {
+            guard error == nil else {
+                print("didUpdateNotificationState error\n\(String(describing: error))")
+                lifecycleState = .connected
+                return
+            }
+
+            if characteristic.uuid == uuidCharForIndicate {
+                let info = characteristic.isNotifying ? "Subscribed" : "Not subscribed"
+               
+                print(info)
+            }
+            lifecycleState = .connected
+        }
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+            print("*******************************************************")
+
+            if ((error) != nil) {
+                print("Error discovering services: \(error!.localizedDescription)")
+                return
+            }
+            guard let services = peripheral.services else {
+                return
+            }
+            //We need to discover the all characteristic
+            for service in services {
+                peripheral.discoverCharacteristics(nil, for: service)
+            }
+            print("Discovered Services: \(services)")
+        }
     
     //MARK:- Zoom to region
     func zoomToRegion() {
@@ -1699,7 +1862,18 @@ import GoogleMaps
             let message = "{\"lat\":\(newLocation.coordinate.latitude),\"lng\":\(newLocation.coordinate.longitude), \"alt\": \(newLocation.altitude)}"
     
     }
-  
+    func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral,a: String!, advertisementData: [String : AnyObject], RSSI: NSNumber) {
+            if (peripheral.name == a){
+                self.bluefruitPeripheral = peripheral
+                self.bluefruitPeripheral.delegate = self
+                centralManager?.stopScan()
+                bleCentral?.connect(self.bluefruitPeripheral, options: nil)
+                self.performSegue(withIdentifier: "ConnectionSegue", sender: nil)
+            }
+            else{
+               
+            }
+        }
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
            let conten = UNMutableNotificationContent()
            conten.title = "已進入區域"
@@ -1716,6 +1890,68 @@ import GoogleMaps
             let request = UNNotificationRequest(identifier: "back", content: conten, trigger: nil)
             UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
         }
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+        switch peripheral.state {
+        case .poweredOn:
+            print("Peripheral Is Powered On.")
+        case .unsupported:
+            print("Peripheral Is Unsupported.")
+        case .unauthorized:
+        print("Peripheral Is Unauthorized.")
+        case .unknown:
+            print("Peripheral Unknown")
+        case .resetting:
+            print("Peripheral Resetting")
+        case .poweredOff:
+          print("Peripheral Is Powered Off.")
+        @unknown default:
+          print("Error")
+        }
+      }
+    func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
+           peripheral.delegate = self
+           peripheral.discoverServices(nil)
+
+       }
+ 
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+            print("----didUpdateValueForCharacteristic---")
+            
+            if  characteristic.uuid.uuidString == "2AF0"  {
+                let data:Data = characteristic.value!
+                print(data)
+                let  d  = Array(UnsafeBufferPointer(start: (data as NSData).bytes.bindMemory(to: UInt8.self, capacity: data.count), count: data.count))
+                print(d)
+                
+          
+                
+               
+                
+            }
+        }
+    /**
+         <#设置特征为正在监听，读取数据#>
+         
+         - parameter peripheral:     <#peripheral description#>
+         - parameter characteristic: <#characteristic description#>
+         - parameter error:          <#error description#>
+         */
+        
+        func peripheral(peripheral: CBPeripheral, didUpdateNotificationStateForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+            print("-----didUpdateNotificationStateForCharacteristic-----")
+            if (error != nil) {
+                print(error?.code);
+            }
+            //Notification has started
+            if(characteristic.isNotifying){
+                peripheral.readValue(for: characteristic);
+                print(characteristic.uuid.uuidString);
+            }
+        }
+    private func peripheral(peripheral: CBPeripheral, didWriteValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+          print("didWriteValueForCharacteristic")
+       }
+    
     
     func setupData() {
             // 1. 檢查系統是否能夠監視 region
@@ -1826,6 +2062,26 @@ import GoogleMaps
         }
         
     }
+        func peripheral(peripheral: CBPeripheral!, didUpdateValueForCharacteristic characteristic: CBCharacteristic!, error: NSError!) {
+         
+        self.statusLabel.text = "Connected"
+         
+            if characteristic.uuid == IRTemperatureDataUUID {
+        // Convert NSData to array of signed 16 bit values
+        let dataBytes = characteristic.value
+                let dataLength = dataBytes!.count
+                var dataArray = (count: dataLength, repeatedValue: 0)
+               
+         
+        // Element 1 of the array will be ambient temperature raw value
+      let ambientTemperature = Double(dataArray.1)/128
+         
+        // Display on the temp label
+        self.temperatureLabel.text = String(format: "%.2f", ambientTemperature)
+                print("溫度")
+                print(ambientTemperature)
+        }
+        }
     func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer!{
             if (overlay is MKPolyline) {
                 let pr = MKPolylineRenderer(overlay: overlay)
@@ -1899,6 +2155,7 @@ import GoogleMaps
 
     }
 }
+
     private func callAPI() {
        let apiKey2 = "ZEJtsYY2yTKTa8tUQ9TfMI1Jl7e6JfD5"
        let url = URL(string: "https://dataservice.accuweather.com/currentconditions/v1/315078?apikey=\(apiKey2)&language=zh-Tw")!
@@ -2002,6 +2259,8 @@ struct CoffeeData: Decodable {
 struct LoanStore:Codable{
     var loans:[Loan]
 }
+// MARK: BLEManagerDelegate
+
 extension UIView{
     func showToast(text: String){
         self.hideToast()
@@ -2047,6 +2306,7 @@ extension UIView{
         }
     }
 }
+
 enum Result<Model> {
     case success(Model)
     case failure(Error)
@@ -2180,6 +2440,7 @@ extension UIView{
         toastLb.layer.masksToBounds = true
   }
 }
+
 extension UILabel
 {
     private struct AssociatedKeys {
@@ -2199,6 +2460,7 @@ extension AppDelegate: CLLocationManagerDelegate {
     let clLocation = CLLocation(latitude: visit.coordinate.latitude, longitude: visit.coordinate.longitude)
   }
 }
+
 extension MKPointAnnotation {
     var mapItem: MKMapItem {
         let placemark = MKPlacemark(coordinate: self.coordinate)
@@ -2297,3 +2559,43 @@ extension UIViewController {
         toastLabel.removeFromSuperview()
     })
 } }
+extension String {
+    ///16进制字符串转Data
+    func hexData() -> Data? {
+        var data = Data(capacity: count / 2)
+        let regex = try! NSRegularExpression(pattern: "[0-9a-f]{1,2}", options: .caseInsensitive)
+        regex.enumerateMatches(in: self, range: NSMakeRange(0, utf16.count)) { match, flags, stop in
+            let byteString = (self as NSString).substring(with: match!.range)
+            var num = UInt8(byteString, radix: 16)!
+            data.append(&num, count: 1)
+        }
+        guard data.count > 0 else { return nil }
+        return data
+    }
+    func utf8Data()-> Data? {
+        return self.data(using: .utf8)
+    }
+}
+extension Data {
+    ///Data转16进制字符串
+    func hexString() -> String {
+        return map { String(format: "%02x", $0) }.joined(separator: "").uppercased()
+    }
+}
+
+var centralManager: CBCentralManager!
+struct CBUUIDs{
+
+    static let kBLEService_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+    static let kBLE_Characteristic_uuid_Tx = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+    static let kBLE_Characteristic_uuid_Rx = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+
+    static let BLEService_UUID = CBUUID(string: kBLEService_UUID)
+    static let BLE_Characteristic_uuid_Tx = CBUUID(string: kBLE_Characteristic_uuid_Tx)//(Property = Write without response)
+    static let BLE_Characteristic_uuid_Rx = CBUUID(string: kBLE_Characteristic_uuid_Rx)// (Property = Read/Notify)
+
+}
+func startScanning() -> Void {
+  // Start Scanning
+  centralManager?.scanForPeripherals(withServices: [CBUUIDs.BLEService_UUID])
+}
